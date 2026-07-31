@@ -1,12 +1,13 @@
 # xskills
 
-Skills repository for XMOS-based sofware development.
+Skills repository for XMOS-based software development.
 
 ## Skills
 
 ### fix-repo-checks
 
-Automatically fixes `test_repo_checks` failures in XMOS library repositories.
+`test_repo_checks` is used in many XMOS originated repositories to ensure quality, consistency etc. 
+Automatically fixes `test_repo_checks` failures in XMOS library repositories. 
 
 **What it does:**
 - Runs pytest to identify failures
@@ -55,32 +56,11 @@ Create `~/.config/opencode/remote-config.json`:
 
 Skills sync on startup.
 
----
 
-## Usage
+## Setup (VSCode)
 
-From any XMOS library repository:
-```
-You: fix repo checks
-```
+TODO
 
----
-
-## Development
-
-### Adding Skills
-
-```bash
-mkdir -p skill/my-new-skill
-# Create skill/my-new-skill/SKILL.md with frontmatter
-git add . && git commit -m "Add skill" && git push
-```
-
-### Local Testing
-
-Use `file:///path/to/xskills` in `remote-config.json` for rapid iteration.
-
----
 
 ## Structure
 
