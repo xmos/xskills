@@ -7,7 +7,7 @@ Skills repository for XMOS-based software development.
 ### fix-repo-checks
 
 `test_repo_checks` is used in many XMOS originated repositories to ensure quality, consistency etc. 
-Automatically fixes `test_repo_checks` failures in XMOS library repositories. 
+This skill automatically fixes `test_repo_checks` failures in XMOS library repositories. 
 
 **What it does:**
 - Runs pytest to identify failures
