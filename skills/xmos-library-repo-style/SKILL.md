@@ -34,12 +34,19 @@ license (see `settings.yml` below); the two most common are:
   fixed/hardcoded value. When editing an existing file in the current year, extend the end year if
   it doesn't already cover it.
 - Use the exact wording for the repo's license type; don't paraphrase it.
+- New files get the current year as a single year
+- If git history is shallow or unreliable, preserve the existing start year; only extend the end year.
+- Skip generated files, build output, and third-party/vendored directories.
 
 ## LICENSE file
 
 Exactly one `LICENSE.<ext>` file at the repo root (e.g. `LICENSE.rst`), whose content matches the
 standard template for the license type verbatim. Don't leave stray extra `LICENSE.*` files around
-after changing license type.
+after changing license type. 
+
+License files belonging to third-party code included in the repo are out of
+scope: never remove or modify them. If unsure whether a license file is
+third-party, do not touch it and flag it instead.
 
 ## `settings.yml`
 
