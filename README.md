@@ -45,7 +45,7 @@ Create `~/.config/opencode/remote-config.json`:
   "$schema": "https://raw.githubusercontent.com/jgordijn/opencode-remote-config/main/remote-skills.schema.json",
   "repositories": [
     {
-      "url": "https://github.com/xross/xskills.git",
+      "url": "https://github.com/xmos/xskills.git",
       "ref": "main"
     }
   ]
@@ -59,15 +59,52 @@ Skills sync on startup.
 
 ## Setup (VSCode)
 
-TODO
+It is recommended to check
+out this repo into a common location (e.g. ``C:\Users\<user>\xskills\`` or ``~/xskills/``)
+and then point your coding tool at it.
 
+For VS Code users, this can be done by adding the xskills folder to your
+``chat.agentSkillsLocations`` setting in your user or workspace ``.vscode/settings.json`` file.
+Note the path must be relative to your home directory::
+
+    {
+      "chat.agentSkillsLocations": {
+          "~/Documents/xskills/skills": true
+      }
+    }
+
+This can also be done by searching for "agent skills" in File -> Preferences -> Settings.
+
+See the full docs at
+[Use Agent Skills in VS Code](https://code.visualstudio.com/docs/agent-customization/agent-skills).
+
+
+## Setup (Copilot CLI)
+
+It is recommended to check
+out this repo into a common location (e.g. ``C:\Users\<user>\xskills\`` or ``~/xskills/``)
+and then point your coding tool at it.
+
+You can add skills in the Copilot CLI with:
+
+```
+/skills add ~/xskills
+```
+
+Alternatively you can use the ``gh`` API to install the skills::
+
+```
+gh skill install xmos/xskills
+```
+
+See the full docs at [Adding agent skills for GitHub Copilot](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills#adding-a-skill-that-someone-else-has-created).
 
 ## Structure
 
 ```
 xskills/
 ├── README.md
-└── skill/
+└── skills/
     └── fix-repo-checks/SKILL.md
 ```
 

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# XMOS / XTC Tools build artefacts
+build/
+bin/
+*.xe
+*.elf
+*.o
+*.a
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
