@@ -21,9 +21,11 @@ Automatically fixes failures from `test_repo_checks` in XMOS library repositorie
 Run the test suite to identify all failing checks:
 
 ```bash
-cd <repo_root>
-pytest ../infr_apps/lib/python/test_repo_checks.py --tb=short --dir=.
+pytest <infr_apps>/lib/python/test_repo_checks.py --tb=short --dir=<repo_root>
 ```
+
+Use absolute paths for both `<infr_apps>` and `<repo_root>`. Repositories are often nested inside
+a sandbox checkout, so do not assume `infr_apps` is a sibling of the target repository.
 
 Parse the output to identify which specific checks failed (e.g., `test_check_source`, `test_check_readme`, etc.).
 
@@ -31,8 +33,11 @@ Parse the output to identify which specific checks failed (e.g., `test_check_sou
 
 **Check for infr_apps:**
 
-1. Look for `../infr_apps` relative to the repository
-2. If not found, clone it:
+1. Search the target repository's ancestors and sandbox root for an `infr_apps` checkout containing
+   `lib/python/test_repo_checks.py`. Prefer the sandbox's canonical checkout over copies embedded in
+   unrelated repositories.
+2. If not found, clone it alongside the other sandbox repositories, not necessarily beside the
+   target repository:
    ```bash
    cd <repo_parent_dir>
    git clone git@github.com:xmos/infr_apps.git
@@ -40,33 +45,43 @@ Parse the output to identify which specific checks failed (e.g., `test_check_sou
 
 **Setup Python virtual environment:**
 
-1. Look for existing venv named `.venv_<repo_name>` (e.g., `.venv_lib_sw_pll` for lib_sw_pll)
-2. If found:
+1. First use the target repository's documented environment, if it has one. Otherwise look for an
+   existing environment that has the selected `infr_apps` and `infr_scripts_py` dependencies
+   installed. The environment name is not authoritative; verify imports before using it.
+2. Verify the candidate environment:
    ```bash
-   source .venv_<repo_name>/bin/activate
-   # Test if infr_apps is importable:
-   python -c "import sys; sys.path.append('../infr_apps/lib/python'); import xmos_source_check"
+   source <venv>/bin/activate
+   PYTHONPATH=<infr_apps>/lib/python python -c "import xmos_source_check; from build_system.repo_type import RepoType"
    ```
-3. If not found or import fails, create new venv:
+3. If no compatible environment exists, create `.venv_<repo_name>` and install the selected
+   `infr_apps` checkout:
    ```bash
    python3 -m venv .venv_<repo_name>
    source .venv_<repo_name>/bin/activate
-   pip install ../infr_apps
+   pip install <infr_apps>
    ```
 
 **Set PYTHONPATH:**
 ```bash
-export PYTHONPATH=../infr_apps/lib/python:$PYTHONPATH
+export PYTHONPATH=<infr_apps>/lib/python:$PYTHONPATH
 ```
+
+If pytest reports that `--dir` is unrecognized, the wrong test file was selected or its adjacent
+`conftest.py` is missing. Do not drop `--dir`; locate a complete, current `infr_apps` checkout.
 
 ### 3. READ LICENSE TYPE
 
 Before fixing source checks, determine the license type:
 
 ```bash
-# Extract license type from settings.yml
+# Extract license type when explicitly configured
 grep "^license:" settings.yml
 ```
+
+Not every repository declares `license` in `settings.yml`. If it is absent, identify the checked-in
+licence from `LICENSE.rst` or `LICENSE.txt` and map it to the updater's accepted value. For example,
+`XMOS PUBLIC LICENCE: Version 1` maps to `xmos_public_v1`. If the licence is missing or ambiguous,
+ask the user instead of guessing.
 
 **If license is `xmos_public_v1`:**
 
@@ -108,6 +123,10 @@ python xmos_source_check.py update <repo_path> <license_type>
 - Adds missing copyright headers
 - Updates copyright date ranges based on git history
 - Fixes license reference text to match the template
+
+The updater can prepend a current header without removing obsolete XMOS copyright or proprietary
+notice blocks later in the file. Always rerun `test_check_source`; if it reports those old lines,
+remove only the superseded notice block while preserving authorship comments and source code.
 
 **Common errors:**
 - `"File /path/to/file.c does not have current copyright at start of file"`
@@ -379,8 +398,8 @@ set(LIB_DEPENDENT_MODULES "lib_logging(>=2.0.0) lib_xassert(>=4.0.0)")
 After fixing each check, re-run the specific test to verify:
 
 ```bash
-pytest ../infr_apps/lib/python/test_repo_checks.py::test_check_<name> --tb=short --dir=.
-# Example: pytest ../infr_apps/lib/python/test_repo_checks.py::test_check_source --tb=short --dir=.
+pytest <infr_apps>/lib/python/test_repo_checks.py::test_check_<name> --tb=short --dir=<repo_root>
+# Example: pytest <infr_apps>/lib/python/test_repo_checks.py::test_check_source --tb=short --dir=<repo_root>
 ```
 
 If the check still fails, analyze the new error message and iterate.
@@ -390,7 +409,7 @@ If the check still fails, analyze the new error message and iterate.
 After all fixes are applied, run all originally-failing checks again:
 
 ```bash
-pytest ../infr_apps/lib/python/test_repo_checks.py --tb=short --dir=.
+pytest <infr_apps>/lib/python/test_repo_checks.py --tb=short --dir=<repo_root>
 ```
 
 ### 7. SUMMARY
@@ -432,7 +451,7 @@ Some checks are skipped based on repository type (from settings.yml):
 
 ## Reference Paths
 
-- **Test file:** `../infr_apps/lib/python/test_repo_checks.py`
+- **Test file:** `<infr_apps>/lib/python/test_repo_checks.py`
 - **Check scripts:** `../infr_apps/lib/python/xmos_*_check.py`
 - **Repository root:** Current working directory when skill is invoked
 
