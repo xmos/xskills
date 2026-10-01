@@ -91,9 +91,28 @@ simulator alone can produce.
 xsim a.xe
 ```
 
-**`xsim` is not real-time — it runs slower than real hardware.** Use it for functional testing,
-determinism, and tracing, not for validating real-time/timing behavior; use real hardware (`xrun`)
-for that.
+**`xsim` is not real-time — it runs many times slower than real hardware.** Use it for functional
+testing, determinism, and tracing, not for validating real-time/timing behavior; use real hardware
+(`xrun`) for that.
+
+### Keep simulator runs to a minimum
+
+Because a test suite that takes seconds on silicon can take tens of minutes in `xsim`, default to
+`xrun` on an attached board for running tests, and treat `xsim` as the fallback:
+
+- **Check how CI runs the test first.** Look at the repository's Jenkinsfile / test scripts: if
+  Jenkins runs a test under `xsim`, it has been judged fast enough to simulate; if it only runs on
+  hardware, expect it to be impractically slow in `xsim`.
+- **Run only the test that answers the question**, not the whole suite, and reduce its iteration
+  count before starting (many test suites have a build option for this) rather than waiting on a
+  full-length run.
+- **Prefer static evidence over another simulation** when it answers the same question — for
+  example the generated code via `xobjdump -d`, or a trace already captured.
+- **Give up on a run that hasn't answered in a few minutes.** Take whatever partial signal it gave
+  (e.g. it no longer faults where it used to), kill it, and move on rather than polling it.
+- **Write large traces to a fast local filesystem.** A `--trace-to` trace of a few seconds of
+  simulated time runs to several GB; under WSL write it to the Linux filesystem, not a `/mnt/c`
+  path, and search it from the end.
 
 Unlike `xrun`, plain `xsim a.xe` needs **no `--io`/`--xscope`-equivalent flag** to surface a
 program's `printf`/`debug_printf` output on stdout — it's shown by default (confirmed empirically:

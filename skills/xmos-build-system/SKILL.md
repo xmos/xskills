@@ -1,6 +1,6 @@
 ---
 name: xmos-build-system
-description: Use when building or rebuilding an XMOS application from the command line for any reason — including rebuilding after a code edit to check warnings/errors or verify a fix — setting up a CMakeLists.txt or lib_build_info.cmake for an XMOS project, choosing between XCommon CMake and a direct xcc invocation, configuring APP_DEPENDENT_MODULES/LIB_DEPENDENT_MODULES dependency versions, reading the sandbox manifest.txt, or diagnosing build errors like missing .xn target files, "-report" stack/memory warnings, or a plain `cmake --build`/`make` invocation failing with "execution of make failed" (XCommon CMake projects build via `xmake -C build <target>`, not a raw CMake build invocation). Covers XTC Tools 15.3.1 XCommon CMake.
+description: Use when building or rebuilding an XMOS application from the command line for any reason — including rebuilding after a code edit to check warnings/errors or verify a fix — setting up a CMakeLists.txt or lib_build_info.cmake for an XMOS project, choosing between XCommon CMake and a direct xcc invocation, configuring APP_DEPENDENT_MODULES/LIB_DEPENDENT_MODULES dependency versions, reading the sandbox manifest.txt, or diagnosing build errors like missing .xn target files, "-report" stack/memory warnings, or a plain `cmake --build`/`make` invocation failing with "execution of make failed" (XCommon CMake projects build via `xmake -C build <target>`, not a raw CMake build invocation), or a suspected stale build cache (e.g. after changing options or branches), or slow builds where `xmake -j` doesn't help on Windows. Covers XTC Tools 15.3.1 XCommon CMake.
 ---
 
 # XMOS build system
@@ -27,6 +27,11 @@ application in a multi-app sandbox, pass its target name: `xmake -C build <app_n
 `xmake -C build app_lovo`). Plain CMake driver invocations like `cmake --build build --target
 <app_name>` do not work here and fail with `CMake Error: Generator: execution of make failed` —
 always drive the build through `xmake`, not `cmake --build`.
+
+On Windows, `xmake -j` does not speed up an `xcc` build: compiles still run one at a time however
+many jobs are requested. When several independent builds are needed (other targets, other
+configurations, a native build in WSL), run them side by side as separate processes instead of
+queueing them behind one another.
 
 ### Minimal application `CMakeLists.txt`
 
@@ -246,6 +251,23 @@ beyond a quick example.
 | `-Wall`, `-Werror` | Standard warning controls. |
 | `-fxscope[=link]` | Enables xSCOPE without a separate `.xscope` config file — see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md). |
 | `-mcmodel=small\|large\|hybrid` | Selects the memory model (per source file); `small` (default) is most efficient but requires a tile's static data to fit in one contiguous 256KB region; switch to `hybrid`/`large` only if the linker reports a size/range error — see [`xmos-c-programming`](../xmos-c-programming/SKILL.md) for the full explanation. |
+
+## Suspected stale build cache: delete the build directory
+
+CMake caches configure-time decisions in the build directory (`CMakeCache.txt`, generated sources,
+fetched/generated tables), and changing options, dependency versions or branches does not always
+invalidate them. If a build fails in a way that suggests stale cached state — for example
+undefined references to symbols that should be generated or provided by a dependency, or a setting change that
+seems to have no effect — delete the build directory and configure and build again from scratch:
+
+```sh
+rm -rf build            # PowerShell: Remove-Item -Recurse -Force build
+cmake -G "Unix Makefiles" -B build
+xmake -C build
+```
+
+Do this before investigating which cache variable is stale, and don't work around it by switching
+to a different build directory; a clean reconfigure is quicker and settles the question.
 
 ## After building
 
