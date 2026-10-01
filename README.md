@@ -19,6 +19,37 @@ This skill automatically fixes `test_repo_checks` failures in XMOS library repos
 
 ---
 
+## Setup (Claude Code)
+
+Claude Code (CLI, desktop app, and the VS Code extension) loads personal skills from
+`~/.claude/skills/`. All three share this same location, so setting it up once covers
+all of them — no extra per-tool config needed.
+
+Since this repo already keeps its skills under a `skills/` subfolder, point
+`~/.claude/skills` at it with a directory junction. This only works if
+`~/.claude/skills` doesn't already exist (i.e. you have no other personal skills there).
+
+Windows (PowerShell, no admin required — junctions, unlike symlinks, don't need elevation):
+```powershell
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills" -Target "C:\Users\<user>\xskills\skills"
+```
+
+macOS/Linux:
+```bash
+ln -s ~/xskills/skills ~/.claude/skills
+```
+
+If `~/.claude/skills` already has other personal skills in it, symlink individual skill
+folders into it instead of linking the whole directory:
+```powershell
+New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\.claude\skills\xmos-build-system" -Target "C:\Users\<user>\xskills\skills\xmos-build-system"
+```
+
+Start a new Claude Code session (CLI/desktop) or reload the VS Code window afterwards
+so the newly linked skills are picked up.
+
+---
+
 ## Setup (OpenCode)
 
 How to sync automatically with OpenCode's remote config plugin.

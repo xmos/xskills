@@ -1,9 +1,31 @@
 ---
 name: xmos-environment-setup
-description: Use when activating the XTC Tools command-line environment on Windows, macOS, or Linux; when `xcc`, `xrun`, `xsim`, `xgdb`, `xflash`, or `xmake` are reported as "command not found"; or when setting up a shell/terminal/CI job to build or run XMOS code. Covers XTC Tools 15.3.1.
+description: Use BEFORE running any XTC Tools command (`xcc`, `xmake`, `xrun`, `xsim`, `xgdb`, `xflash`, `xobjdump`) or an XCommon CMake configure/build (`cmake -G "Unix Makefiles"`, `xmake -C build`) for an XMOS project — every new agent shell or tool call starts without the environment, so read this first rather than searching for SetEnv.bat. Also use when those commands are reported as "command not found" or "not recognized", or when setting up a shell/terminal/CI job to build or run XMOS code. Provides a one-command wrapper (scripts/xtc.ps1) for PowerShell. Covers XTC Tools 15.3.1.
 ---
 
 # XMOS environment setup
+
+## Quick start for agents (Windows PowerShell)
+
+Each agent tool call runs in a fresh shell, so activation does not carry over from an earlier
+call. Activate and run in the **same** call using the wrapper in the `scripts` folder next to this
+file. `<skill-dir>` below is the directory containing this `SKILL.md`; substitute its absolute
+path:
+
+```powershell
+& "<skill-dir>\scripts\xtc.ps1" xmake -C build
+& "<skill-dir>\scripts\xtc.ps1" xrun --xscope bin\app.xe
+```
+
+The wrapper imports `SetEnv.bat` into the PowerShell process, runs the command and exits with its
+exit code. With no arguments it just activates the environment and prints `xcc --version`. It
+defaults to XTC 15.3.1; set `$env:XTC_VERSION` (or `$env:XTC_SETENV` for a full path to
+`SetEnv.bat`) to use another install. To run several commands in one call, dot-source it first:
+`. "<skill-dir>\scripts\xtc.ps1"; cmake -G "Unix Makefiles" -B build; xmake -C build`.
+
+The rest of this skill explains what the wrapper does and covers other shells and operating systems.
+
+## Background
 
 The XTC Tools (`xcc`, `xrun`, `xsim`, `xgdb`, `xflash`, `xmake`, `xobjdump`, ...) are not on `PATH`
 by default. The environment must be explicitly activated in every new shell before these commands

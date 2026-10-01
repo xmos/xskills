@@ -50,6 +50,10 @@ change it. Concretely:
   the reference-clock divider) rather than assuming 100 MHz.
 - Changing the reference clock affects **all** timers/ports/clock-blocks on that tile — not just
   the one being measured.
+- Remember the `value+1` divider convention applies to **every** PLL/clock divider field
+  (`R`, `F`, `OD`, `REFDIV`, `XCDIV`, `SSDIV`...) — e.g. going from `OD=0` to `OD=1` halves a PLL's
+  output (divisor 1→2), it does not leave it unchanged. This is an easy off-by-one to miss when
+  skimming code that "just sets" a divider field without re-deriving the resulting frequency.
 
 ## Configuring clocks: prefer the XN file
 

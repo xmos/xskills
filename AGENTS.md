@@ -20,7 +20,8 @@ intentionally tool-neutral: it does not assume VS Code, Copilot, or any specific
    or stack allocation with tool-calculated stack sizes. See
    [`embedded-c-practices`](./skills/embedded-c-practices/SKILL.md).
 3. **Always activate the XTC Tools environment before building or running.** Commands like `xcc`,
-   `xrun`, `xsim`, `xgdb` only work once the XTC environment is active. See
+   `xrun`, `xsim`, `xgdb` only work once the XTC environment is active, and each new agent shell
+   starts without it. On Windows, prefix the command with the `scripts/xtc.ps1` wrapper in
    [`xmos-environment-setup`](./skills/xmos-environment-setup/SKILL.md).
 4. **Always use a Python virtual environment** for any Python tooling in an XMOS sandbox (dependency
    management, build scripts, CI helpers). Never install Python packages into the system/global
@@ -42,7 +43,7 @@ all of them up front — the list below is so you know what exists.
 
 | Skill | Use when... |
 |---|---|
-| [`xmos-environment-setup`](./skills/xmos-environment-setup/SKILL.md) | Activating the XTC Tools command-line environment on Windows/macOS/Linux, or diagnosing "command not found" for `xcc`/`xrun`/`xsim`. |
+| [`xmos-environment-setup`](./skills/xmos-environment-setup/SKILL.md) | Read before running any XTC Tools command or XCommon CMake build: activating the environment (one-command `scripts/xtc.ps1` wrapper for PowerShell), or diagnosing "command not found" for `xcc`/`xrun`/`xsim`. |
 | [`xmos-toolchain-paths`](./skills/xmos-toolchain-paths/SKILL.md) | Locating XMOS headers, libraries, or the CMake build system on disk; resolving `#include` errors for `xcore/*.h`, `xs1.h`, `platform.h`. |
 | [`xmos-build-system`](./skills/xmos-build-system/SKILL.md) | Building an XMOS application from the command line, with XCommon CMake or with `xcc` directly. |
 | [`xmos-run-and-simulate`](./skills/xmos-run-and-simulate/SKILL.md) | Running a `.xe` on hardware with `xrun`, or in the simulator with `xsim`; understanding simulation speed and tracing. |
