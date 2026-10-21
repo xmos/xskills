@@ -91,9 +91,28 @@ simulator alone can produce.
 xsim a.xe
 ```
 
-**`xsim` is not real-time — it runs slower than real hardware.** Use it for functional testing,
-determinism, and tracing, not for validating real-time/timing behavior; use real hardware (`xrun`)
-for that.
+**`xsim` is not real-time — it runs many times slower than real hardware.** Use it for functional
+testing, determinism, and tracing, not for validating real-time/timing behavior; use real hardware
+(`xrun`) for that.
+
+### Keep simulator runs to a minimum
+
+Because a test suite that takes seconds on silicon can take tens of minutes in `xsim`, default to
+`xrun` on an attached board for running tests, and treat `xsim` as the fallback:
+
+- **Check how CI runs the test first.** Look at the repository's Jenkinsfile / test scripts: if
+  Jenkins runs a test under `xsim`, it has been judged fast enough to simulate; if it only runs on
+  hardware, expect it to be impractically slow in `xsim`.
+- **Run only the test that answers the question**, not the whole suite, and reduce its iteration
+  count before starting (many test suites have a build option for this) rather than waiting on a
+  full-length run.
+- **Prefer static evidence over another simulation** when it answers the same question — for
+  example the generated code via `xobjdump -d`, or a trace already captured.
+- **Give up on a run that hasn't answered in a few minutes.** Take whatever partial signal it gave
+  (e.g. it no longer faults where it used to), kill it, and move on rather than polling it.
+- **Write large traces to a fast local filesystem.** A `--trace-to` trace of a few seconds of
+  simulated time runs to several GB; under WSL write it to the Linux filesystem, not a `/mnt/c`
+  path, and search it from the end.
 
 Unlike `xrun`, plain `xsim a.xe` needs **no `--io`/`--xscope`-equivalent flag** to surface a
 program's `printf`/`debug_printf` output on stdout — it's shown by default (confirmed empirically:
@@ -142,10 +161,41 @@ Useful options:
   cycles reached (n)` and **exits with a nonzero code** — this is the expected/intentional way a
   bounded run ends, not a functional failure; distinguish it from a real simulator/hardware exception
   by checking the message text, not just the exit code.
-- `--trace` / `-t` — full instruction trace to stdout (or `--trace-to <file>`); e.g. grepping the
-  trace can show exactly which tile executed a given syscall.
-- `--vcd-tracing "-o file.vcd -tile tile[0] -ports|-cycles|-clock-blocks|-cores|-instructions"` —
-  signal-level tracing to a VCD file, viewable in a waveform viewer such as GTKWave.
+- `--trace` / `-t` — full instruction trace to stdout (or `--trace-to <file>` to write it to a file
+  instead, recommended — the trace is large, e.g. tens of MB for well under a second of simulated
+  time). Each line is annotated with the enclosing function name/offset (e.g.
+  `(timer_aob_assert_time+ 82)`), so **a plain `xsim a.xe` crash report like `Unhandled exception:
+  ECALL, data: 0x00000000` (which, unlike the `xrun`/`xgdb` case in
+  [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md), prints no file/line at all)
+  can still be pinpointed without `xgdb`**: re-run with `--trace-to trace.txt`, then search the file
+  for `TRAP` — the matching line (e.g. `TRAP ET: 8, SPC: 8000439e, ... (ECALL)`) and the
+  instruction just above it (an `XM.ASSERT_s1r`/`ASSERTN_*` for a failed assert) give the exact
+  function+offset where execution stopped; reading backwards from there through the same function's
+  other trace lines reconstructs the register values (and hence the C-level condition, e.g. which
+  branch of an `if`) that led to the trap, without needing a debug session at all. This also works
+  for tracking down which of several call sites of a repeatedly-invoked function is the one that
+  finally faulted — e.g. `grep "(some_func+ 4a)" trace.txt` to list every visit to one specific
+  instruction/offset across the whole run.
+- `--vcd-tracing 'args'` — signal-level tracing to a VCD file, viewable in a waveform viewer such
+  as GTKWave. Verified syntax (`xsim --help`), arguments are one quoted string:
+  `[global options] -tile <name> <trace options...> [-tile <name> <trace options...>]...`
+  - Global: `-o <file>` (output path), `-start-disabled` (wait for a `_traceStart`/`_traceStop`
+    syscall instead of tracing from cycle 0), `-pads` (trace device pad state).
+  - `-tile <name>` — required for multi-tile programs, selects which tile the trace options that
+    follow apply to (repeat the whole `-tile ... <options>` group per tile to trace more than one).
+  - Per-tile trace options: `-ports`, `-ports-detailed`, `-cycles`, `-cores`, `-timers`,
+    `-clock-blocks`, `-instructions`, `-functions`, `-usb`.
+  - Example: `xsim --vcd-tracing "-o trace.vcd -tile tile[1] -ports -cycles" a.xe`.
+  - Confirmed empirically: `$timescale` is always `1 ps`; a `-cycles` signal (named `*_CYCLES` in
+    the VCD's `$comment`-embedded signal-hierarchy XML) increments by 1 every tick, and consecutive
+    ticks are spaced by the tile's actual clock period in ps (e.g. 1666ps apart for a 600MHz
+    `SystemFrequency` tile per the `.xn` file — see
+    [`xmos-clock-domains`](../xmos-clock-domains/SKILL.md)) — use this to convert VCD timestamps to
+    real time, or as a sanity check that the right clock rate is configured.
+  - Confirmed empirically: killing the run early with `--max-cycles` (a nonzero-exit, abrupt stop —
+    see above) still leaves a well-formed, loadable VCD file truncated at the last traced value
+    change — unlike plain buffered `printf` output (above), VCD data is written incrementally, not
+    lost. Safe to combine `--max-cycles` with `--vcd-tracing` to bound an otherwise-indefinite run.
 - `--gprof` — enables function/statement/address-level profiling; see
   [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md).
 - `--xscope "-offline <file>"` or `--xscope "-realtime <host:port>"` — exercise xSCOPE code paths in

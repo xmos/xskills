@@ -1,6 +1,6 @@
 ---
 name: embedded-c-practices
-description: Use when writing or reviewing embedded C for XMOS/XCORE for general correctness and safety -- avoiding malloc/dynamic allocation, sizing stacks, avoiding unbounded recursion, fixed-point vs floating point, avoiding double/64-bit division in real-time loops, using lib_xcore_math for optimized fixed-point/vector math, and general real-time/interrupt-safety practices. Complements xmos-c-programming for lib_xcore-specific APIs.
+description: Use when writing or reviewing embedded C for XMOS/XCORE for general correctness and safety -- avoiding malloc/dynamic allocation, sizing stacks, avoiding unbounded recursion, fixed-point vs floating point, avoiding double/64-bit division in real-time loops, using lib_xcore_math for optimized fixed-point/vector math, replacing memcpy/memset with vpu_memcpy/vect_s32_set, and general real-time/interrupt-safety practices. Complements xmos-c-programming for lib_xcore-specific APIs.
 ---
 
 # Embedded C practices for XMOS
@@ -87,6 +87,23 @@ performance-critical paths and note that choice inline.**
   `s32_sqrt`, `s32_inverse`, `q24_sin`, `q24_cos`, `q24_tan`, `q24_logistic`/`q24_logistic_fast` all
   exist verbatim in `api/xmath/scalar/s32.h`; `chunk_q30_exp_small()` (a chunked/vectorized form) is
   the actual name for the exponential helper, not a scalar `q30_exp_small()`.
+
+## Bulk memory moves and fills
+
+For contiguous copies and fills in hot paths, use lib_xcore_math's vector-unit helpers rather than
+the C library or a hand-written word-at-a-time loop, in plain C code as well as alongside assembly:
+
+- **`vpu_memcpy(void *dst, const void *src, unsigned bytes)`** (`xmath/util.h`) is a drop-in
+  replacement for `memcpy()` with two extra constraints: `dst` and `src` must both be word-aligned,
+  and `src` must not sit at the very end of RAM. It moves 32 bytes per iteration through the VPU
+  (`vldd`/`vstd`) with a masked tail, so it is roughly an order of magnitude faster than a
+  word-at-a-time C loop.
+- **`vect_s32_set(int32_t a[], int32_t b, unsigned length)`** fills an `int32_t` buffer with a
+  constant, including zero, instead of `memset()`. Measured on XS3 at 600 MHz, clearing 512 words
+  took about 125 reference clock ticks with `vect_s32_set()` against about 323 with `memset()`.
+
+Both are contiguous only. To find which code is worth optimising in the first place, profile
+first — see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md).
 
 ## General real-time hygiene
 
