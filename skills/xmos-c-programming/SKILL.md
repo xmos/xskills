@@ -12,11 +12,11 @@ required, keep it isolated and prefer C for everything else.
 All of the APIs below are declared in headers under `xcore/` (installed at
 `<XMOS_TOOL_PATH>/target/include/xcore/` — see
 [`xmos-toolchain-paths`](../xmos-toolchain-paths/SKILL.md)), and rely on the XS3 concepts described
-in [`xs3-architecture`](../xs3-architecture/SKILL.md) (logical cores, channels, ports, timers).
+in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md) (logical cores, channels, ports, timers).
 
 For DSP/numeric code (fixed-point arithmetic, saturating 64-to-32-bit division, trig/exp/sqrt, or
 vectorized math targeting XS3's VPU) prefer `lib_xcore_math` over hand-rolled implementations — see
-[`embedded-c-practices`](../embedded-c-practices/SKILL.md) for specifics.
+[`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md) for specifics.
 Everything below applies **within a single tile**. To place entry-points on more than one tile or
 pass a chanend between tiles, see
 [`xmos-multi-tile-architecture`](../xmos-multi-tile-architecture/SKILL.md).
@@ -121,7 +121,7 @@ The compiler calculates each logical core's stack size statically at build time 
 when the call graph is fully known at compile time, which is why:
 
 - **No dynamic allocation** (`malloc`/`free`) — see
-  [`embedded-c-practices`](../embedded-c-practices/SKILL.md).
+  [`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md).
 - **No unbounded/indirect recursion** — the compiler cannot bound stack usage for it.
 - **Function pointers must be annotated** if used for indirect calls: mark both the pointer type and
   every candidate target function with `__attribute__((fptrgroup("name")))` so the compiler can
@@ -140,12 +140,12 @@ most applications compile every file under the same model. See
 
 - **`small` (default)** — assumes all of a tile's statically-allocated data fits in one contiguous
   256KB region, and that branch targets are within 128KB (single-issue) or 256KB (dual-issue —
-  see [`xs3-architecture`](../xs3-architecture/SKILL.md) on dual-issue). Generates the most
+  see [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md) on dual-issue). Generates the most
   efficient code; if either assumption doesn't hold, the **linker** reports an error (not a compile
   error) — that's the signal to switch models, not something to pre-guess.
 - **`large`** — data can be spread across multiple/non-contiguous memories (e.g. internal RAM,
   external DDR, software-defined memory — see the memory model in
-  [`xs3-architecture`](../xs3-architecture/SKILL.md)), and functions anywhere in memory can be
+  [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)), and functions anywhere in memory can be
   called. Generates less efficient data-access and call code than `small`.
 - **`hybrid`** — uses efficient small-model code for data accesses the compiler can prove are safe,
   falling back to large-model access otherwise; function calls always use large-model code. Lets

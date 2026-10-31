@@ -4,22 +4,22 @@ Skills repository for XMOS-based software development.
 
 ## Skills
 
-- [authoring-xmos-skills](skills/authoring-xmos-skills/SKILL.md): Create and maintain skills in this repository.
-- [embedded-c-practices](skills/embedded-c-practices/SKILL.md): Apply safe, efficient embedded C practices.
-- [fix-repo-checks](skills/fix-repo-checks/SKILL.md): Diagnose and fix XMOS repository checks.
 - [xmos-build-system](skills/xmos-build-system/SKILL.md): Build and configure XCommon CMake projects.
 - [xmos-c-programming](skills/xmos-c-programming/SKILL.md): Write multicore XCORE C using `lib_xcore`.
 - [xmos-clock-domains](skills/xmos-clock-domains/SKILL.md): Configure and reason about xcore.ai clocks.
 - [xmos-debugging-profiling](skills/xmos-debugging-profiling/SKILL.md): Debug and profile with xgdb, xSCOPE, and xgprof.
+- [xmos-embedded-c-practices](skills/xmos-embedded-c-practices/SKILL.md): Apply safe, efficient embedded C practices.
 - [xmos-environment-setup](skills/xmos-environment-setup/SKILL.md): Activate and troubleshoot XTC Tools environments.
+- [xmos-fix-repo-checks](skills/xmos-fix-repo-checks/SKILL.md): Diagnose and fix XMOS repository checks.
 - [xmos-flashing](skills/xmos-flashing/SKILL.md): Program persistent images with `xflash`.
 - [xmos-library-repo-style](skills/xmos-library-repo-style/SKILL.md): Follow XMOS library repository conventions.
 - [xmos-multi-tile-architecture](skills/xmos-multi-tile-architecture/SKILL.md): Structure applications across multiple tiles.
 - [xmos-project-structure](skills/xmos-project-structure/SKILL.md): Organize XMOS projects, sandboxes, and tooling.
 - [xmos-run-and-simulate](skills/xmos-run-and-simulate/SKILL.md): Run applications using `xrun` or `xsim`.
+- [xmos-skill-authoring](skills/xmos-skill-authoring/SKILL.md): Create and maintain skills in this repository.
 - [xmos-toolchain-paths](skills/xmos-toolchain-paths/SKILL.md): Locate toolchain headers, libraries, and targets.
 - [xmos-vscode-extension](skills/xmos-vscode-extension/SKILL.md): Configure XMOS development in VS Code.
-- [xs3-architecture](skills/xs3-architecture/SKILL.md): Understand XS3 hardware and execution resources.
+- [xmos-xs3-architecture](skills/xmos-xs3-architecture/SKILL.md): Understand XS3 hardware and execution resources.
 
 ---
 

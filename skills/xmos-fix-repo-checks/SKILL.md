@@ -1,9 +1,9 @@
 ---
-name: fix-repo-checks
+name: xmos-fix-repo-checks
 description: Use when test_repo_checks fails, when repo checks need fixing, or when user mentions "repo_checks", "repo checks", "infr_apps checks", "xmos checks". Automatically runs update scripts for fixable checks and AI-edits for unfixable checks in XMOS library repositories.
 ---
 
-# fix-repo-checks
+# xmos-fix-repo-checks
 
 Automatically fixes failures from `test_repo_checks` in XMOS library repositories by running update scripts for auto-fixable checks and using AI to repair unfixable checks.
 

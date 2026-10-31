@@ -19,7 +19,7 @@ produces a high-frequency **system clock**. Dividers then derive, from that syst
 - the **xcore tile clock(s)** — the clock each tile's execution unit runs at,
 - the **xCONNECT switch clock**, and
 - the **reference clock** — which drives **hardware timers, ports, and clock blocks** (see
-  [`xs3-architecture`](../xs3-architecture/SKILL.md)).
+  [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)).
 
 A separate **Secondary PLL** (aka Application PLL) can independently generate one more frequency,
 typically for external devices/peripherals (e.g. an audio codec, LPDDR, MIPI) rather than for the

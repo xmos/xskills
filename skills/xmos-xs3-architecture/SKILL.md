@@ -1,5 +1,5 @@
 ---
-name: xs3-architecture
+name: xmos-xs3-architecture
 description: Use when reasoning about XS3 hardware concepts such as tiles, hardware threads/logical cores, the switch/interconnect, channels, ports, hardware timers, locks, the event/interrupt/exception model, the XS3 memory model, the vector unit, or floating point; or when deciding how many parallel tasks a tile can run, what exception a fault corresponds to, or how resources are allocated. Covers the XS3 architecture (XCORE.AI and other XS3-based devices).
 ---
 
@@ -159,7 +159,7 @@ Ports connect logical cores to physical pins. Key concepts:
 XS3 supports up to three kinds of memory in a single linear address space (exact ranges are
 implementation/datasheet-specific): **internal RAM** (code/data, zero-latency access; typically
 program low, stack high, data/heap-equivalent in between — though XMOS code should avoid a heap, see
-[`embedded-c-practices`](../embedded-c-practices/SKILL.md)), **internal ROM** (boot/debug, fixed
+[`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md)), **internal ROM** (boot/debug, fixed
 entry points), and optionally **external memory** and/or **software-defined memory** (both served
 through a small cache — external memory maps a physical external chip; software-defined memory lets
 software satisfy cache misses itself, e.g. to execute-from-flash or map data from a remote tile).
@@ -243,4 +243,3 @@ than guessing when you need: the exact encoding/operands of a specific instructi
 alphabetical instruction reference (~250 instructions), the full exception table with which
 instructions can raise which exception, or the lane classification of a specific instruction for
 dual-issue reasoning.
-
