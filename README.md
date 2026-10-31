@@ -4,18 +4,22 @@ Skills repository for XMOS-based software development.
 
 ## Skills
 
-### fix-repo-checks
-
-`test_repo_checks` is used in many XMOS originated repositories to ensure quality, consistency etc. 
-This skill automatically fixes `test_repo_checks` failures in XMOS library repositories. 
-
-**What it does:**
-- Runs pytest to identify failures
-- Sets up infr_apps environment (clones if needed, creates `.venv_<repo_name>`)
-- Auto-fixes: copyright headers, LICENSE.rst, CHANGELOG.rst
-- AI-fixes: README.rst, settings.yml, version consistency, metadata, docs, deps
-- Validates `xmos_public_v1` license appropriateness
-- Reports results (changes left uncommitted)
+- [authoring-xmos-skills](skills/authoring-xmos-skills/SKILL.md): Create and maintain skills in this repository.
+- [embedded-c-practices](skills/embedded-c-practices/SKILL.md): Apply safe, efficient embedded C practices.
+- [fix-repo-checks](skills/fix-repo-checks/SKILL.md): Diagnose and fix XMOS repository checks.
+- [xmos-build-system](skills/xmos-build-system/SKILL.md): Build and configure XCommon CMake projects.
+- [xmos-c-programming](skills/xmos-c-programming/SKILL.md): Write multicore XCORE C using `lib_xcore`.
+- [xmos-clock-domains](skills/xmos-clock-domains/SKILL.md): Configure and reason about xcore.ai clocks.
+- [xmos-debugging-profiling](skills/xmos-debugging-profiling/SKILL.md): Debug and profile with xgdb, xSCOPE, and xgprof.
+- [xmos-environment-setup](skills/xmos-environment-setup/SKILL.md): Activate and troubleshoot XTC Tools environments.
+- [xmos-flashing](skills/xmos-flashing/SKILL.md): Program persistent images with `xflash`.
+- [xmos-library-repo-style](skills/xmos-library-repo-style/SKILL.md): Follow XMOS library repository conventions.
+- [xmos-multi-tile-architecture](skills/xmos-multi-tile-architecture/SKILL.md): Structure applications across multiple tiles.
+- [xmos-project-structure](skills/xmos-project-structure/SKILL.md): Organize XMOS projects, sandboxes, and tooling.
+- [xmos-run-and-simulate](skills/xmos-run-and-simulate/SKILL.md): Run applications using `xrun` or `xsim`.
+- [xmos-toolchain-paths](skills/xmos-toolchain-paths/SKILL.md): Locate toolchain headers, libraries, and targets.
+- [xmos-vscode-extension](skills/xmos-vscode-extension/SKILL.md): Configure XMOS development in VS Code.
+- [xs3-architecture](skills/xs3-architecture/SKILL.md): Understand XS3 hardware and execution resources.
 
 ---
 
@@ -136,7 +140,8 @@ See the full docs at [Adding agent skills for GitHub Copilot](https://docs.githu
 xskills/
 ├── README.md
 └── skills/
-    └── fix-repo-checks/SKILL.md
+    ├── <skill-name>/SKILL.md
+    └── ...
 ```
 
 Can add `agent/*.md`, `command/*.ts`, `plugin/*.ts` later.
