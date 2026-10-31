@@ -10,8 +10,8 @@ AI coding-agent skills for XMOS XCORE development.
 - [xmos-debugging-profiling](skills/xmos-debugging-profiling/SKILL.md): Debug and profile with xgdb, xSCOPE, and xgprof.
 - [xmos-embedded-c-practices](skills/xmos-embedded-c-practices/SKILL.md): Apply safe, efficient embedded C practices.
 - [xmos-environment-setup](skills/xmos-environment-setup/SKILL.md): Activate and troubleshoot XTC Tools environments.
-- [xmos-fix-repo-checks](skills/xmos-fix-repo-checks/SKILL.md): Diagnose and fix XMOS repository checks.
 - [xmos-flashing](skills/xmos-flashing/SKILL.md): Program persistent images with `xflash`.
+- [xmos-internal-repo-checks](skills/xmos-internal-repo-checks/SKILL.md): Diagnose and fix repository checks using XMOS internal scripts.
 - [xmos-library-repo-style](skills/xmos-library-repo-style/SKILL.md): Follow XMOS library repository conventions.
 - [xmos-multi-tile-architecture](skills/xmos-multi-tile-architecture/SKILL.md): Structure applications across multiple tiles.
 - [xmos-project-structure](skills/xmos-project-structure/SKILL.md): Organize XMOS projects, sandboxes, and tooling.

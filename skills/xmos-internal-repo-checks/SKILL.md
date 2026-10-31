@@ -1,11 +1,15 @@
 ---
-name: xmos-fix-repo-checks
-description: Use when test_repo_checks fails, when repo checks need fixing, or when user mentions "repo_checks", "repo checks", "infr_apps checks", "xmos checks". Automatically runs update scripts for fixable checks and AI-edits for unfixable checks in XMOS library repositories.
+name: xmos-internal-repo-checks
+description: Use when XMOS staff need to diagnose or fix test_repo_checks failures using the internal infr_apps scripts, or when the user mentions "repo_checks", "repo checks", "infr_apps checks", or "xmos checks". Runs update scripts for fixable checks and AI-edits for unfixable checks in XMOS library repositories. Requires access to XMOS internal infrastructure.
+compatibility: Requires access to the XMOS infr_apps repository and its Python tooling.
 ---
 
-# xmos-fix-repo-checks
+# XMOS internal repository checks
 
 Automatically fixes failures from `test_repo_checks` in XMOS library repositories by running update scripts for auto-fixable checks and using AI to repair unfixable checks.
+
+This workflow requires access to the internal `infr_apps` scripts. Confirm that access before
+running checks; if it is unavailable, explain the requirement and stop this workflow.
 
 ## When to Use
 

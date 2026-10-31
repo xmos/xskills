@@ -57,6 +57,7 @@ all of them up front — the list below is so you know what exists.
 | [`xmos-embedded-c-practices`](./skills/xmos-embedded-c-practices/SKILL.md) | Writing or reviewing embedded C for correctness/safety: no malloc, stack sizing, no unbounded recursion. |
 | [`xmos-project-structure`](./skills/xmos-project-structure/SKILL.md) | Setting up or navigating an XMOS sandbox/repo layout; setting up a Python venv for tooling. |
 | [`xmos-library-repo-style`](./skills/xmos-library-repo-style/SKILL.md) | Creating/editing files in an XMOS library-style repo (`lib_*`): copyright headers, LICENSE, `settings.yml`, README.rst structure/metadata, CHANGELOG.rst format, version consistency, `doc/rst/` structure, dependency version pinning. |
+| [`xmos-internal-repo-checks`](./skills/xmos-internal-repo-checks/SKILL.md) | Diagnosing and fixing `test_repo_checks` failures using XMOS internal `infr_apps` scripts; requires access to that repository and its Python tooling. |
 | [`xmos-skill-authoring`](./skills/xmos-skill-authoring/SKILL.md) | Adding a new skill or instruction to this repository, e.g. after learning something new from XMOS docs. |
 
 ## Repository layout
