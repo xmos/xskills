@@ -2,6 +2,9 @@
 
 AI coding-agent skills for XMOS XCORE development.
 
+Copyright 2026 XMOS LIMITED. This Software is subject to the terms of the
+[XMOS Public Licence: Version 1](LICENSE.rst).
+
 ## Skills
 
 - [xmos-build-system](skills/xmos-build-system/SKILL.md): Build and configure XCommon CMake projects.
