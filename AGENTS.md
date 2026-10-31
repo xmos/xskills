@@ -65,7 +65,7 @@ all of them up front — the list below is so you know what exists.
 ```text
 xskills/
 ├─ AGENTS.md                          # this file
-├─ README.md                          # what this is, how to adopt it in another repo
+├─ README.rst                         # what this is, how to adopt it in another repo
 ├─ CLAUDE.md                          # pointer to this file, for Claude
 ├─ .github/copilot-instructions.md    # pointer to this file, for Copilot
 ├─ .cursor/rules/xmos.mdc             # pointer to this file, for Cursor

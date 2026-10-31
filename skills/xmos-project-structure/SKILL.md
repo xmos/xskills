@@ -17,7 +17,7 @@ This repository (`xskills`) is **not** part of that sandbox. It's a standalone g
 distributed independently of any application sandbox — checked out once in the user's home
 directory (e.g. `~/xskills` or `C:\Users\<user>\xskills`) and pointed at from the coding tool's
 config, or synced automatically via OpenCode's remote-config plugin. See the root
-[`README.md`](../../README.md) for setup details. Do not assume `xskills` lives alongside an
+[`README.rst`](../../README.rst) for setup details. Do not assume `xskills` lives alongside an
 application's own dependencies.
 
 A real application sandbox typically looks like:
@@ -134,4 +134,3 @@ not a test runner) is a separate, unrelated thing from its C-based `tests/`.
   [`xmos-build-system`](../xmos-build-system/SKILL.md)).
 - Fetched library dependency caches — under `XMOS_HOME`, not inside the sandbox's own repos (see
   [`xmos-toolchain-paths`](../xmos-toolchain-paths/SKILL.md)).
-
