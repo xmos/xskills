@@ -51,6 +51,7 @@ all of them up front — the list below is so you know what exists.
 | [`xmos-debugging-profiling`](./skills/xmos-debugging-profiling/SKILL.md) | Debugging with `xgdb`, profiling with `xgprof`/`xsim --gprof`, or fast "printf debugging" with xSCOPE. |
 | [`xmos-vscode-extension`](./skills/xmos-vscode-extension/SKILL.md) | Using the XMOS XTC Tools VS Code extension (build/run/debug/flash buttons, tasks.json, launch.json, IntelliSense). |
 | [`xs3-architecture`](./skills/xs3-architecture/SKILL.md) | Reasoning about XS3 hardware concepts: tiles, hardware threads, channels, ports, timers, locks, events/interrupts, memory model. |
+| [`xs3a-to-vx4b-asm`](./skills/xs3a-to-vx4b-asm/SKILL.md) | Translating XS3A assembly to VX4B and checking candidate zero-stack, signed mantissa, fixed-offset byte/halfword memory access, or `xm.vldr` optimisations. |
 | [`xmos-c-programming`](./skills/xmos-c-programming/SKILL.md) | Writing multicore XMOS C code with `lib_xcore`: parallel tasks, channels, ports, timers, `select`. |
 | [`xmos-multi-tile-architecture`](./skills/xmos-multi-tile-architecture/SKILL.md) | Structuring a multi-tile application: placing entry-points on `tile[N]`, passing chanends between tiles, writing the top-level multi-tile XC file, `.xn` hardware targets. |
 | [`xmos-clock-domains`](./skills/xmos-clock-domains/SKILL.md) | Understanding xcore.ai clock domains (System/Secondary PLL, reference/switch/tile clocks), changing frequencies via the XN file or PLL registers, or diagnosing timing measurements after a clock change. |
