@@ -1,5 +1,5 @@
 ---
-name: embedded-c-practices
+name: xmos-embedded-c-practices
 description: Use when writing or reviewing embedded C for XMOS/XCORE for general correctness and safety -- avoiding malloc/dynamic allocation, sizing stacks, avoiding unbounded recursion, fixed-point vs floating point, avoiding double/64-bit division in real-time loops, using lib_xcore_math for optimized fixed-point/vector math, replacing memcpy/memset with vpu_memcpy/vect_s32_set, and general real-time/interrupt-safety practices. Complements xmos-c-programming for lib_xcore-specific APIs.
 ---
 
@@ -48,7 +48,7 @@ Busy-wait loops waste a logical core's execution slot that could otherwise be us
 threads on the tile, and are not necessary given XS3's hardware event model. Use `select`
 (`xcore/select.h`) or blocking channel/port operations to wait for events instead of spinning — see
 [`xmos-c-programming`](../xmos-c-programming/SKILL.md) and
-[`xs3-architecture`](../xs3-architecture/SKILL.md).
+[`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md).
 
 ## Fixed-point vs floating point
 
@@ -61,7 +61,7 @@ performance-critical paths and note that choice inline.**
 - **Prefer 32-bit fixed-point (Q-format `int32_t`) arithmetic** for real-time/hot-path DSP code over
   floating point, in line with the above.
 - **Avoid `double` in real-time loops.** XS3's hardware floating-point unit is single-precision (see
-  [`xs3-architecture`](../xs3-architecture/SKILL.md)) — `double` arithmetic is not natively
+  [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)) — `double` arithmetic is not natively
   accelerated and is comparatively slow. `double` is fine for one-off, non-time-critical code (e.g.
   startup/init-time calculations) where performance doesn't matter, but should not appear inside a
   real-time processing loop; use `float` or fixed-point instead.
@@ -82,7 +82,7 @@ performance-critical paths and note that choice inline.**
   arithmetic (square root, inverse, trig, exponential/logistic, vectorized/SIMD operations, etc.).
   It provides both a scalar fixed-point API (e.g. `s32_sqrt`, `s32_inverse`, `s32_mul`, `q24_sin`/
   `q24_cos`/`q24_tan`, `q24_logistic`) and vector APIs that target XS3's VPU (see the vector unit in
-  [`xs3-architecture`](../xs3-architecture/SKILL.md)) — these are written and tuned for XS3, unlike
+  [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)) — these are written and tuned for XS3, unlike
   generic `libm`/hand-written implementations of the same functions. Confirmed present (v2.4.0):
   `s32_sqrt`, `s32_inverse`, `q24_sin`, `q24_cos`, `q24_tan`, `q24_logistic`/`q24_logistic_fast` all
   exist verbatim in `api/xmath/scalar/s32.h`; `chunk_q30_exp_small()` (a chunked/vectorized form) is

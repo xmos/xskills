@@ -71,7 +71,7 @@ xrun: Program received signal ET_ECALL, Application exception.
 
 this is a real application-level exception, not a connection/tooling problem — execution reached
 the reported file/line and the hardware raised the named exception. The signal name is one of the
-`ET_*` exception types (see the table in [`xs3-architecture`](../xs3-architecture/SKILL.md)); the
+`ET_*` exception types (see the table in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)); the
 most common one to see this way is `ET_ECALL`, raised by any `__builtin_trap()` call — not just a
 failed `assert(...)`, but also `lib_xassert`'s `fail(...)` and `unreachable(...)` (confirmed by
 running `lib_xassert`'s `app_assert`/`app_fail`/`app_unreachable` examples on real hardware — all
@@ -176,7 +176,7 @@ uint32_t elapsed = t1 - t0;   // ticks of the 100 MHz reference clock: elapsed/1
 - Declare `t0`/`t1` (or the variables they're assigned from) `volatile` so the compiler cannot
   reorder the two timer reads around the measured code or optimize either read away.
 - The timer ticks at the 100 MHz reference clock (see
-  [`xs3-architecture`](../xs3-architecture/SKILL.md)): divide `elapsed` by 100 for microseconds, or
+  [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)): divide `elapsed` by 100 for microseconds, or
   multiply by 10 for nanoseconds. **100 MHz is only the default** — if the project's XN file or PLL
   configuration changes the reference clock frequency, use the actual configured value instead; see
   [`xmos-clock-domains`](../xmos-clock-domains/SKILL.md).
@@ -186,7 +186,7 @@ uint32_t elapsed = t1 - t0;   // ticks of the 100 MHz reference clock: elapsed/1
   [`xmos-c-programming`](../xmos-c-programming/SKILL.md).
 - This measures wall-clock ticks on the current logical core; if other threads on the same tile are
   runnable, actual elapsed *thread* cycles can include their interleaved execution too — see the
-  thread-scheduler notes in [`xs3-architecture`](../xs3-architecture/SKILL.md). For statistically
+  thread-scheduler notes in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md). For statistically
   robust or multi-function profiling, prefer `xgprof`/`xsim --gprof` above instead of hand-rolled
   timing.
 

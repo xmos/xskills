@@ -1,25 +1,28 @@
 # xskills
 
-Skills repository for XMOS-based software development.
+AI coding-agent skills for XMOS XCORE development.
+
+Copyright 2026 XMOS LIMITED. This Software is subject to the terms of the
+[XMOS Public Licence: Version 1](LICENSE.rst).
 
 ## Skills
 
-- [authoring-xmos-skills](skills/authoring-xmos-skills/SKILL.md): Create and maintain skills in this repository.
-- [embedded-c-practices](skills/embedded-c-practices/SKILL.md): Apply safe, efficient embedded C practices.
-- [fix-repo-checks](skills/fix-repo-checks/SKILL.md): Diagnose and fix XMOS repository checks.
 - [xmos-build-system](skills/xmos-build-system/SKILL.md): Build and configure XCommon CMake projects.
 - [xmos-c-programming](skills/xmos-c-programming/SKILL.md): Write multicore XCORE C using `lib_xcore`.
 - [xmos-clock-domains](skills/xmos-clock-domains/SKILL.md): Configure and reason about xcore.ai clocks.
 - [xmos-debugging-profiling](skills/xmos-debugging-profiling/SKILL.md): Debug and profile with xgdb, xSCOPE, and xgprof.
+- [xmos-embedded-c-practices](skills/xmos-embedded-c-practices/SKILL.md): Apply safe, efficient embedded C practices.
 - [xmos-environment-setup](skills/xmos-environment-setup/SKILL.md): Activate and troubleshoot XTC Tools environments.
 - [xmos-flashing](skills/xmos-flashing/SKILL.md): Program persistent images with `xflash`.
+- [xmos-internal-repo-checks](skills/xmos-internal-repo-checks/SKILL.md): Diagnose and fix repository checks using XMOS internal scripts.
 - [xmos-library-repo-style](skills/xmos-library-repo-style/SKILL.md): Follow XMOS library repository conventions.
 - [xmos-multi-tile-architecture](skills/xmos-multi-tile-architecture/SKILL.md): Structure applications across multiple tiles.
 - [xmos-project-structure](skills/xmos-project-structure/SKILL.md): Organize XMOS projects, sandboxes, and tooling.
 - [xmos-run-and-simulate](skills/xmos-run-and-simulate/SKILL.md): Run applications using `xrun` or `xsim`.
+- [xmos-skill-authoring](skills/xmos-skill-authoring/SKILL.md): Create and maintain skills in this repository.
 - [xmos-toolchain-paths](skills/xmos-toolchain-paths/SKILL.md): Locate toolchain headers, libraries, and targets.
 - [xmos-vscode-extension](skills/xmos-vscode-extension/SKILL.md): Configure XMOS development in VS Code.
-- [xs3-architecture](skills/xs3-architecture/SKILL.md): Understand XS3 hardware and execution resources.
+- [xmos-xs3-architecture](skills/xmos-xs3-architecture/SKILL.md): Understand XS3 hardware and execution resources.
 
 ---
 
@@ -56,17 +59,21 @@ so the newly linked skills are picked up.
 
 ## Setup (OpenCode)
 
-How to sync automatically with OpenCode's remote config plugin.
+Use the [opencode-remote-config plugin](https://github.com/jgordijn/opencode-remote-config)
+to sync skills automatically. This repository's `manifest.json` also imports the core
+XMOS guidance from `AGENTS.md`.
 
-### 1. Install opencode-remote-config plugin
+The paths below configure this globally. For project-specific setup, add the plugin to
+the project's `opencode.json` and create `.opencode/remote-config.json` instead. The plugin
+uses project-level remote configuration when present, falling back to global configuration.
+Choose project-specific setup if you only want the XMOS guidance in that project.
 
-```bash
-npm install -g @jgordijn/opencode-remote-config
-```
+### 1. Configure the plugin
 
-### 2. Configure OpenCode
+Add `@jgordijn/opencode-remote-config` to the `plugin` array in your existing
+`~/.config/opencode/opencode.json` or `opencode.jsonc`, preserving other settings and plugins.
+If you do not have a config file, create one with:
 
-Add to `~/.config/opencode/opencode.json`:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
@@ -74,22 +81,44 @@ Add to `~/.config/opencode/opencode.json`:
 }
 ```
 
-Create `~/.config/opencode/remote-config.json`:
+OpenCode installs npm plugins automatically at startup; no global npm installation is required.
+
+### 2. Configure the repository
+
+Create `~/.config/opencode/remote-config.json`, or add this repository to its existing
+`repositories` array:
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/jgordijn/opencode-remote-config/main/remote-skills.schema.json",
   "repositories": [
     {
       "url": "https://github.com/xmos/xskills.git",
-      "ref": "main"
+      "ref": "develop"
     }
   ]
 }
 ```
 
-### 3. Restart OpenCode
+On Windows without symlink support, add `"installMethod": "copy"` at the top level of
+`remote-config.json`, alongside `repositories`. This also works for environments where
+symlinks are unsuitable, such as containers with different host and container paths.
 
-Skills sync on startup.
+### 3. Restart and verify
+
+Skills and core XMOS instructions sync on startup. Ask OpenCode to list its available
+XMOS skills and confirm that names such as `xmos-build-system` and `xmos-c-programming`
+appear. Check startup output for sync errors if they are missing.
+
+See the [plugin documentation](https://github.com/jgordijn/opencode-remote-config#readme)
+for selective imports, local checkouts, and additional configuration options.
+
+### Troubleshooting
+
+**Plugin not loading:** Check your `~/.config/opencode/opencode.json` or `opencode.jsonc` contains the plugin entry.
+
+**Skills not syncing:** Check the configured branch and startup errors. If the cached checkout needs resetting, delete only the xskills checkout under `~/.cache/opencode/remote-config/repos/` and restart OpenCode.
+
+**Git auth issues:** Verify access using `git ls-remote` with the configured repository URL. For SSH, check your SSH key; for HTTPS, check your Git credential helper.
 
 
 ## Setup (VSCode)
@@ -145,13 +174,3 @@ xskills/
 ```
 
 Can add `agent/*.md`, `command/*.ts`, `plugin/*.ts` later.
-
----
-
-## Troubleshooting
-
-**Plugin not loading:** Check `~/.config/opencode/opencode.json` contains plugin entry
-
-**Skills not syncing:** Delete `~/.cache/opencode/remote-config/repos/` and restart OpenCode
-
-**Git auth issues:** Use SSH (`git@github.com:...`) or HTTPS with token

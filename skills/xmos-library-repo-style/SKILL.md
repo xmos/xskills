@@ -185,6 +185,6 @@ see [`xmos-build-system`](../xmos-build-system/SKILL.md) on why `-g` matters for
 ## Related
 
 See [`xmos-project-structure`](../xmos-project-structure/SKILL.md) for the broader sandbox
-convention these repos live in, and [`embedded-c-practices`](../embedded-c-practices/SKILL.md) /
+convention these repos live in, and [`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md) /
 [`xmos-c-programming`](../xmos-c-programming/SKILL.md) for the source code itself rather than its
 packaging/documentation.

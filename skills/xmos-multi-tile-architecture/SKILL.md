@@ -58,7 +58,7 @@ functions themselves are ordinary C, compiled and reasoned about like anything e
 
 Add a `chan` in the multi-tile file and pass it to each tile-level entry point; the tools
 automatically allocate one chanend per entry-point that uses it and route it over the interconnect
-(see [`xs3-architecture`](../xs3-architecture/SKILL.md) for the switch/xCONNECT/XLINK concepts this
+(see [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md) for the switch/xCONNECT/XLINK concepts this
 relies on):
 
 ```c

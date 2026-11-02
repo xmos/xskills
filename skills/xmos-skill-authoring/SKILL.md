@@ -1,5 +1,5 @@
 ---
-name: authoring-xmos-skills
+name: xmos-skill-authoring
 description: Use when adding a new skill to this repository, updating an existing SKILL.md, or deciding whether new information belongs in a skill vs AGENTS.md. Also use whenever XMOS documentation reveals something that would have been useful to know in advance.
 ---
 
@@ -19,8 +19,9 @@ relevant — `AGENTS.md` is always loaded, so it must stay concise.
 
 ## Writing a new `SKILL.md`
 
-1. Create `skills/<kebab-case-name>/SKILL.md`. The `name` in frontmatter must match the
-   folder name.
+1. Create `skills/xmos-<kebab-case-name>/SKILL.md`. Prefix every skill name with `xmos-`
+   so XMOS skills are easy to recognise and group in skills lists. The `name` in frontmatter
+   must match the folder name.
 2. Write a `description` using the "Use when..." pattern, listing concrete triggers (symptoms,
    commands, file types) an agent might encounter — this is what drives discovery, so make it
    keyword-rich rather than vague.

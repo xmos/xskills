@@ -1,0 +1,4 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jgordijn/opencode-remote-config/main/manifest.schema.json",
+  "instructions": ["AGENTS.md"]
+}
