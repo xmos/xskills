@@ -129,16 +129,11 @@ needed) went from 11 errors to 0 once `MPLBACKEND=Agg` was set, with no other ch
 Some `lib_*` repos' `tests/` directories are pure Python (`pytest`), but others are ordinary
 XCommon CMake **C applications** using the Unity test framework, with no Python involved in running
 them at all — check for a `tests/CMakeLists.txt` with `include($ENV{XMOS_CMAKE_PATH}/xcommon.cmake)`
-before assuming a `tests/` directory needs a venv/`pip install`. Confirmed on `lib_xcore_math`
-v2.4.0: `tests/vect_tests/` (and its siblings `bfp_tests`, `dct_tests`, `fft_tests`, `filter_tests`,
-`scalar_tests`, `xs3_tests`) each build a standalone `.xe` (depending on `lib_unity`) targeting
-`XK-EVK-XU316` directly, with an `XMATH_SMOKE_TEST` CMake option to shrink repetition counts for a
-quick run — `cmake -B build -DXMATH_SMOKE_TEST=ON` + `xmake -C build` then `xrun --xscope
-bin\vect_tests.xe` ran all 182 smoke-mode cases directly on real hardware with no Python, no venv,
-and no prebuilt-fixture dependency at all — actually *easier* to exercise standalone than a
-Python-pytest-based suite (e.g. `lib_mic_array`/`lib_sw_pll`'s heavier hardware-fixture suites).
-`lib_xcore_math`'s `python/` directory (table/LUT-generator scripts invoked at build time by CMake,
-not a test runner) is a separate, unrelated thing from its C-based `tests/`.
+before assuming a `tests/` directory needs pytest. Such tests are built and run like any other
+application (see [`xmos-build-system`](../xmos-build-system/SKILL.md) and
+[`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md)); check for build options that shorten
+runs. A C-based test suite doesn't need pytest, but Python scripts invoked during its build (for
+example table generators) still need a suitable virtual environment.
 
 ## Where things live
 

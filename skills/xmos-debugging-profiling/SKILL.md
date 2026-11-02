@@ -78,16 +78,9 @@ failed `assert(...)`, but also `lib_xassert`'s `fail(...)` and `unreachable(...)
 running `lib_xassert`'s `app_assert`/`app_fail`/`app_unreachable` examples on real hardware — all
 three raise `ET_ECALL` identically).
 
-**Concrete example encountered in practice**: the exception above is
-`assert(regVal == 1 && msg("CODEC reg read problem"))` failing inside board-init code — an I2C
-read from the board's audio CODEC didn't return the expected value. The root cause turned out to
-be a **board/target mismatch**: the `.xe` was built for `XK-EVK-XU316`, but a *different* board (an
-XMOS L71) was actually connected. The wrong board doesn't have the expected CODEC at that I2C
-address, so board-init's sanity check correctly failed fast rather than continuing with hardware
-that doesn't match what the code expects. When board-init/hardware-setup code raises an exception
-like this, check that the connected physical board actually matches `APP_HW_TARGET`/the `.xn` file
-the `.xe` was built with (see [`xmos-build-system`](../xmos-build-system/SKILL.md)) before assuming
-a wiring fault or a software bug.
+If the exception occurs in board or hardware-initialisation code, check that the connected board
+matches the `APP_HW_TARGET`/`.xn` file the `.xe` was built for (see
+[`xmos-build-system`](../xmos-build-system/SKILL.md)) before assuming a wiring fault or software bug.
 
 Read the reported file/line and any `msg(...)` text first; it's usually specific enough to identify
 the faulty component/assumption without further stepping. To inspect state at the point of the
