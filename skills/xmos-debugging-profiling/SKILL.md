@@ -52,14 +52,12 @@ To debug in the simulator instead of on hardware, run `connect -s` instead of `c
 Tip: `(gdb) start` is shorthand for `load` + `break main` + `continue` in a single command, for the
 common case of wanting to stop at the very beginning of `main`.
 
-**`quit` on a still-running/attached target prompts for confirmation and exits non-zero.** If the
-target program is still executing when `quit` runs (e.g. right after a breakpoint like `break
-main` + `continue` stops it, as opposed to running to program exit), `xgdb` prints `A debugging
-session is active. ... Quit anyway? (y or n)`; in `--batch` mode this is auto-answered `y`
-(inferiors are killed), but the process still exits with code **1**, not 0. Don't treat that exit
-code as a script/build failure — check the printed output for the expected breakpoint-hit message
-instead of relying on the exit code when scripting a `--batch` session that quits out of a live
-target.
+Use `--batch` for scripted debugging; it terminates on a script error or once all commands have
+run, returning an error code if it terminates unexpectedly. Check both the exit status and the
+expected stop condition (for example the breakpoint-hit message). With `--return-child-result`,
+XGDB returns the target program's exit code, or 1 if the script ends before the program completes;
+that 1 need not mean the debugging task failed. See
+[Using XGDB in scripts](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/cmd-line-tools/xgdb-manual/xgdb-manual.html#using-xgdb-in-scripts).
 
 ## Interpreting a runtime exception from `xrun`/`xgdb`
 
@@ -121,23 +119,26 @@ way as above.
 xobjdump -s CircularBuffer.xe
 ```
 
-This produces one ELF file per tile per boot stage, e.g. `image_n0c0_2.elf` for tile 0,
-`image_n0c1_2.elf` for tile 1, and so on. **Use only the `_2`-suffixed images** — the others are
-bootstrap images used for system initialization and are not what you want to analyse.
+This extracts each tile's ELF sectors. Repeated sectors for the same tile get an incrementing
+suffix: `image_n0c0.elf`, then `image_n0c0_2.elf`, and so on. The
+[XTC profiling tutorial](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tutorials/working-with-targets/intro.html)
+analyses the `_2` images (the application) and ignores the others (boot stages); confirm which
+image holds your application if the extracted set differs.
 
 ### 3. Generate a report with `xgprof`
 
-Pair each tile's ELF file with the matching `.gprof` file from step 1. Useful report levels:
+Pair each tile's ELF file with the matching `.gprof` file from step 1. Quote `.gprof` names: the
+brackets are shell glob characters. Useful report levels:
 
 ```sh
 # Flat summary report
-xgprof -b image_n0c0_2.elf tile[0]_core0.gprof
+xgprof -b image_n0c0_2.elf "tile[0]_core0.gprof"
 
 # Source-line-level detail
-xgprof -l -b image_n0c0_2.elf tile[0]_core0.gprof
+xgprof -l -b image_n0c0_2.elf "tile[0]_core0.gprof"
 
 # Address-level detail with hit counts
-xgprof -C -l -b image_n0c0_2.elf tile[0]_core0.gprof
+xgprof -C -l -b image_n0c0_2.elf "tile[0]_core0.gprof"
 ```
 
 Start with the flat summary, then drill into `-l`/`-C -l` for the tiles/functions that matter.
@@ -221,8 +222,13 @@ for the selected toolchain's setup and transport limits.
    the amount of data that can be buffered.
 
 2. Pass this config file to `xcc` as an input at **both compile and link** time (alongside your
-   source files), or use `xcc -fxscope[=link]` to enable basic xSCOPE support without a separate
-   config file.
+   source files).
+
+   `xcc -fxscope` is not a substitute for this when you want text output over xSCOPE: per the
+   [xcc manual](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/cmd-line-tools/xcc-manual/xcc-manual.html#cmdoption-xcc-fxscope)
+   it is equivalent to a config with `ioMode="none"`, enabling xSCOPE and its target library
+   (e.g. probes registered at runtime) without redirecting `printf`. Both require an xSCOPE link in
+   the target's XN file.
 
 3. Run with xSCOPE enabled:
 
