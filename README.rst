@@ -241,13 +241,26 @@ Start a fresh agent session after updating; Copilot CLI can use
 ``/skills reload``. OpenCode remote-config fetches updates on startup from the
 configured branch. A tag or commit reference remains pinned to that version.
 
+Library repository integration
+==============================
+
+XMOS library repositories can use their root ``AGENTS.md`` to direct agents to
+this guidance while retaining repository-specific compatibility and legacy
+instructions. Follow the setup instructions for your coding tool: a link alone
+does not install or load skills.
+
+References to ``main`` use the latest approved xskills release; release tags
+allow a pinned baseline. Use an accessible candidate checkout during pilots
+until the first approved release is available on ``main``.
+
 Repository validation
 =====================
 
 The repository validation suite checks Agent Skills frontmatter, skill names,
 local links, bundled script references, skill indexes, the instruction manifest,
-and README RST syntax. They require Python 3.12 and Git, but no XTC Tools or
-hardware. External URLs and the technical behaviour of skills are not tested.
+and README RST syntax.
+The tests require Python 3.12 and Git, but no XTC Tools or hardware. External URLs
+and the technical behaviour of skills are not tested.
 
 Run the same suite locally from the repository root using a virtual environment.
 

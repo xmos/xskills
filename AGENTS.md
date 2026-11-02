@@ -1,15 +1,22 @@
 # XMOS Agent Guidance
 
-This file is the entrypoint for AI coding agents (GitHub Copilot, Claude, Cursor, or any
-`AGENTS.md`-aware tool) working in an XMOS XCORE / XS3 codebase. It applies to every task in this
-repository. Deeper, task-specific guidance lives in [`skills/`](./skills/) and is
-loaded on demand — see the index below.
+This file provides core guidance for AI coding agents working on XMOS embedded software.
+Task-specific guidance lives in [`skills/`](./skills/). Read the relevant `SKILL.md` files
+and supporting references as needed; see the index below. Compatible coding tools can
+discover installed skills and load their instructions on demand. The maintenance
+instructions apply when modifying xskills itself.
 
 ## Scope and audience
 
 This guidance targets **XMOS XTC Tools 15.3.1** and the **XS3 architecture** (XCORE.AI and other
 XS3-based devices). It is written for use both inside XMOS and by external customers, and is
 intentionally tool-neutral: it does not assume VS Code, Copilot, or any specific editor.
+
+Apply the embedded-development principles only to XMOS software tasks, even when this file
+is loaded globally. Language and architecture recommendations apply to new development within
+the stated compatibility scope. When maintaining existing implementations, preserve established
+APIs, supported targets and legacy conventions unless migration is requested. Environment setup
+and verification requirements also apply to maintenance work.
 
 ## Core principles
 
@@ -19,15 +26,16 @@ intentionally tool-neutral: it does not assume VS Code, Copilot, or any specific
 2. **No dynamic memory.** Do not use `malloc`/`free`/`new` in embedded application code. Use static
    or stack allocation with tool-calculated stack sizes. See
    [`xmos-embedded-c-practices`](./skills/xmos-embedded-c-practices/SKILL.md).
-3. **Always activate the XTC Tools environment before building or running.** Commands like `xcc`,
-   `xrun`, `xsim`, `xgdb` only work once the XTC environment is active, and each new agent shell
-   starts without it. On Windows, prefix the command with the `scripts/xtc.ps1` wrapper in
+3. **Ensure the XTC Tools environment is active before building, running or debugging.** Check
+   the selected toolchain in the executing shell; environment persistence between agent calls
+   depends on the harness. Activate it when absent. On Windows, use the `scripts/xtc.ps1` wrapper in
    [`xmos-environment-setup`](./skills/xmos-environment-setup/SKILL.md).
 4. **Always use a Python virtual environment** for any Python tooling in an XMOS sandbox (dependency
    management, build scripts, CI helpers). Never install Python packages into the system/global
    interpreter. See [`xmos-project-structure`](./skills/xmos-project-structure/SKILL.md).
-5. **`xsim` is not real-time.** The simulator is cycle-accurate but runs slower than real hardware.
-   Do not use it for timing/performance validation — use real hardware (`xrun`) for that. See
+5. **Distinguish simulated cycles from host elapsed time.** `xsim` is near cycle-accurate and
+   supports instruction/cycle analysis; its wall-clock runtime is not target execution time.
+   Validate real peripheral timing and end-to-end hardware behaviour on hardware (`xrun`). See
    [`xmos-run-and-simulate`](./skills/xmos-run-and-simulate/SKILL.md).
 6. **Prefer xSCOPE over JTAG `--io` for logging.** `xrun --io` halts all logical cores on a tile per
    transfer and has no buffering; `xrun --xscope` does not. See
@@ -36,10 +44,42 @@ intentionally tool-neutral: it does not assume VS Code, Copilot, or any specific
    Tools 15.3 documentation or the XS3 architecture manual over general embedded knowledge. If
    something cannot be verified from a skill or the docs, say so rather than guessing.
 
+## Using the guidance
+
+- Identify relevant skills from their descriptions and read their `SKILL.md` instructions and
+  supporting references as needed. Discovery and installation behaviour varies by coding tool.
+- Check the project's README, documentation, examples and build configuration for supported
+  architectures, devices and toolchain versions before applying a recommendation.
+- Look for existing XMOS libraries and examples before implementing equivalent functionality.
+  Prefer supported implementations for new development; only recommend a successor when confirmed.
+- Repository-specific hardware, compatibility and legacy requirements take precedence over general
+  recommendations here. Do not assume internal XMOS repositories or tools are accessible.
+
+## Repository integration
+
+Library repositories can reference this central guidance from their own `AGENTS.md` files.
+Use `main` for the latest approved xskills release, or an immutable release tag to pin a baseline.
+The first approved release must be available there before rolling out those references to customers.
+
+A link alone does not install or load skills. Use an accessible installed copy, or retrieve
+the central instructions and relevant skill resources from the referenced release. State when
+guidance cannot be accessed and continue using the project's own documentation.
+
+## Maintaining xskills
+
+- Follow [`xmos-skill-authoring`](./skills/xmos-skill-authoring/SKILL.md) when changing skills.
+  Keep detailed workflows in skills and core instructions concise.
+- Keep the README and skill index consistent when adding, removing or renaming skills.
+- Run the repository validation suite described in [`README.rst`](./README.rst); verify changed
+  commands, examples and scripts as appropriate, and state what was actually checked.
+- Use a Python virtual environment for repository tooling. Do not include confidential or
+  customer-specific content; state access requirements for workflows using internal resources.
+
 ## Skills index
 
-Skills are loaded on demand by keyword match against their `description`. You do not need to read
-all of them up front — the list below is so you know what exists.
+Use the descriptions below to identify relevant skills. You do not need to read every
+skill before beginning work. Automatic discovery and loading depend on your coding tool
+and installation.
 
 | Skill | Use when... |
 |---|---|

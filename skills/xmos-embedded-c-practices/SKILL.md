@@ -111,6 +111,7 @@ first — see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md)
   unpredictable timing (e.g. unbounded loops driven by external input) inside time-critical loops.
 - Prefer the compiler/tooling's own facilities for checking resource and stack usage
   (`xcc -report` — see [`xmos-build-system`](../xmos-build-system/SKILL.md)) over manual estimation.
-- When something needs verifying against real timing, use hardware (`xrun`) rather than the
-  simulator, which is not real-time — see
+- Use hardware (`xrun`) to validate real peripheral timing and end-to-end system behaviour.
+  Simulated cycles can support instruction/timing analysis within the simulator's model, but
+  host wall-clock runtime is not target execution time — see
   [`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md).
