@@ -101,6 +101,27 @@ def test_skill_script_references(skill):
         )
 
 
+@pytest.mark.parametrize("skill", SKILLS, ids=lambda path: path.name)
+def test_skill_external_links(skill):
+    """Restrict links leaving a skill directory to targets with a documented fallback.
+
+When a skill is copied on its own, only its directory is installed. Links outside it
+must be other skills' SKILL.md files or the root README.rst/AGENTS.md, which the
+README tells users how to resolve. Anything else would be silently unavailable.
+"""
+    allowed_root = {ROOT / "README.rst", ROOT / "AGENTS.md"}
+    unexpected = []
+    for document in skill.rglob("*.md"):
+        for target in local_targets(document.read_text(encoding="utf-8")):
+            path = (document.parent / target).resolve()
+            if path.is_relative_to(skill.resolve()):
+                continue
+            sibling = path.parent.parent == (ROOT / "skills").resolve() and path.name == "SKILL.md"
+            if not (sibling or path in allowed_root):
+                unexpected.append(target)
+    assert not unexpected, f"Links outside {skill.name} without a fallback: {unexpected}"
+
+
 def test_skill_indexes(repo_root, readme_tree):
     """Require both published skill indexes to match the available directories.
 

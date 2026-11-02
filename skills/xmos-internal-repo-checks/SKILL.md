@@ -194,20 +194,9 @@ These checks require manual editing based on error analysis:
 
 **How to fix:** Edit `README.rst` based on error messages.
 
-**Common issues:**
-1. **Title format:** Must be `lib_sw_pll: Descriptive Title`
-   ```rst
-   lib_sw_pll: Software PLL Library
-   ===================================
-   ```
-
-2. **Required sections:**
-   - Summary
-   - Features
-   - Known Issues
-   - Support
-
-3. **RST syntax errors:** Run `rstcheck README.rst` to identify issues
+**Conventions:** follow [README.rst](../xmos-library-repo-style/SKILL.md#readmerst)
+in the style skill for title format, metadata and section order. Run an RST checker
+(for example `rstcheck README.rst`) for syntax errors.
 
 **Error patterns:**
 - `"readme_check: Title doesn't match expected..."`
@@ -216,8 +205,7 @@ These checks require manual editing based on error analysis:
 
 **Fix approach:**
 - Read the error message carefully
-- Edit README.rst to add missing sections or fix formatting
-- Ensure proper RST syntax (headings, bullet points, code blocks)
+- Edit README.rst to match the style skill's conventions and the checker's error
 
 ---
 
@@ -227,30 +215,9 @@ These checks require manual editing based on error analysis:
 
 **How to fix:** Edit `settings.yml` based on error messages.
 
-**Common issues:**
-1. **Missing first-line comment:**
-   ```yaml
-   # Copyright 2024 XMOS LIMITED.
-   ```
-
-2. **Invalid version format:** Must be `X.Y.Z`
-   ```yaml
-   version: "1.0.0"
-   ```
-
-3. **Missing cognidox numbers:**
-   ```yaml
-   cognidox:
-     user_guide: "1234-UG"    # User Guide
-     sw_manual: "1234-SM"      # Software Manual
-     app_note: "1234-AN"       # Application Note (if applicable)
-   ```
-
-4. **Doxygen project:**
-   ```yaml
-   doxygen:
-     project: "lib_sw_pll"
-   ```
+**Conventions:** follow [settings.yml](../xmos-library-repo-style/SKILL.md#settingsyml)
+in the style skill and the schema enforced by the selected `infr_apps` revision. Use
+the repository's existing structure; do not invent Cognidox part numbers.
 
 **Error patterns:**
 - `"settings.yml doesn't match basic schema"`
@@ -270,8 +237,8 @@ These checks require manual editing based on error analysis:
 
 **How to fix:** Synchronize versions across all files.
 
-**Files to check:**
-1. `README.rst` - First line or title should contain version
+**Files to check** (see [version consistency](../xmos-library-repo-style/SKILL.md#version-consistency)):
+1. `README.rst` - `:version:` metadata field
 2. `settings.yml` - `version:` field
 3. `CHANGELOG.rst` - First version entry
 4. `lib_build_info.cmake` - `set(LIB_VERSION "X.Y.Z")`
@@ -362,8 +329,13 @@ DEPENDENT_MODULES = lib_logging(>=2.0.0) lib_xassert(>=4.0.0)
 ```cmake
 set(LIB_NAME lib_sw_pll)
 set(LIB_VERSION "1.0.0")
-set(LIB_DEPENDENT_MODULES "lib_logging(>=2.0.0) lib_xassert(>=4.0.0)")
+set(LIB_DEPENDENT_MODULES "lib_logging(2.0.0)" "lib_xassert(4.0.0)")
 ```
+
+These versions illustrate the syntax; use versions verified for the repository.
+CMake entries are individually quoted exact references, not the legacy Makefile's
+minimum-version expressions. See
+[dependency version pinning](../xmos-library-repo-style/SKILL.md#dependency-version-pinning).
 
 **Common issues:**
 - Dependencies without version specifications

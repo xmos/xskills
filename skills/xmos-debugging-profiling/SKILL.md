@@ -12,7 +12,8 @@ not work well.
 
 ## `xgdb`: source-level, multi-tile debugging
 
-`xgdb` extends GDB with awareness of multiple XCORE tiles/logical cores. `xrun` is actually a
+`xgdb` extends GDB with awareness of multiple XCORE tiles and hardware threads (also
+called logical cores). `xrun` is actually a
 wrapper around `xgdb` for common cases; use `xgdb` directly for interactive/advanced debugging.
 
 Typical interactive session:
@@ -95,7 +96,7 @@ exception interactively instead of just reading the one-line report, run the sam
 
 ## Profiling with `xgprof`
 
-Profiling captures *sampled* execution data per tile/logical core via `xgdb`, separate from
+Profiling captures *sampled* execution data per tile/thread via `xgdb`, separate from
 `xsim --gprof` (the simulator's own function/statement/address-level profiling of a `.xe` run in
 `xsim`, mentioned below). The `xgprof` workflow below targets real hardware via `xgdb`.
 
@@ -108,8 +109,8 @@ xgdb -ex "connect --gprof" -ex load -ex continue CircularBuffer.xe
 ```
 
 Leave `xgdb` running for the period you want to profile, then interrupt with <kbd>Ctrl-C</kbd> and
-exit with `quit`. On exit, one `.gprof` file per tile/logical core is written to the current
-working directory (the filename encodes which tile and logical core it covers, e.g.
+exit with `quit`. On exit, one `.gprof` file per tile/thread is written to the current
+working directory (the filename encodes which tile and thread it covers, e.g.
 `tile[0]_core0.gprof`).
 
 To profile a program that is already running, having booted from flash, attach instead of loading:
@@ -163,38 +164,59 @@ up `xgprof` — read a hardware timer (`xcore/hwtimer.h`, see
 
 ```c
 #include <xcore/hwtimer.h>
+#include <stdint.h>
 
+// Within a function returning an error code:
 hwtimer_t tmr = hwtimer_alloc();
+if (tmr == 0) {
+    return 1;
+}
 
-volatile uint32_t t0 = hwtimer_get_time(tmr);
+uint32_t t0 = hwtimer_get_time(tmr);
 // ... code being measured ...
-volatile uint32_t t1 = hwtimer_get_time(tmr);
+uint32_t t1 = hwtimer_get_time(tmr);
 
-uint32_t elapsed = t1 - t0;   // ticks of the 100 MHz reference clock: elapsed/100 = microseconds
+uint32_t elapsed = t1 - t0;   // reference-clock ticks; convert using the actual frequency
+hwtimer_free(tmr);
+// Consume/report elapsed and the measured result outside the timed interval.
 ```
 
-- Declare `t0`/`t1` (or the variables they're assigned from) `volatile` so the compiler cannot
-  reorder the two timer reads around the measured code or optimize either read away.
+- Declaring `t0` and `t1` volatile would preserve their stores and the order of those
+  volatile accesses, but would not guarantee that unrelated non-volatile computation
+  stays between the timer reads. The XTC 15.3.1 implementation of `hwtimer_get_time()`
+  already uses volatile assembly for the reads; see
+  `<XMOS_TOOL_PATH>/target/include/xcore/_support/xcore_hwtimer_impl.h`.
+  Keep measured results observable and inspect optimised generated code when precise
+  measurement boundaries matter. Use documented compiler-ordering mechanisms where
+  needed rather than treating volatile timestamp storage as a general compiler barrier.
 - The timer ticks at the 100 MHz reference clock (see
   [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)): divide `elapsed` by 100 for microseconds, or
   multiply by 10 for nanoseconds. **100 MHz is only the default** — if the project's XN file or PLL
   configuration changes the reference clock frequency, use the actual configured value instead; see
   [`xmos-clock-domains`](../xmos-clock-domains/SKILL.md).
-- The subtraction `t1 - t0` is correct even across the timer's 32-bit wraparound, since unsigned
-  wraparound arithmetic gives the right difference.
+- Unsigned subtraction handles a wrap provided the interval is shorter than one full
+  32-bit timer period. It cannot count multiple wraps; at 100 MHz the full period is
+  approximately 42.95 seconds. The reference frequency must also remain constant for
+  a single fixed-frequency conversion to apply.
 - Free the timer (`hwtimer_free(tmr)`) once done, like any other resource — see
   [`xmos-c-programming`](../xmos-c-programming/SKILL.md).
-- This measures wall-clock ticks on the current logical core; if other threads on the same tile are
-  runnable, actual elapsed *thread* cycles can include their interleaved execution too — see the
-  thread-scheduler notes in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md). For statistically
+- This measures elapsed reference-clock ticks, not just instruction issue opportunities
+  for the current hardware thread. Other runnable threads share
+  the tile's execution unit, so their interleaved execution contributes to elapsed time;
+  see the scheduler notes in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md). For statistically
   robust or multi-function profiling, prefer `xgprof`/`xsim --gprof` above instead of hand-rolled
   timing.
 
 ## xSCOPE: fast host communication and data probes
 
-xSCOPE is the recommended mechanism for both "printf-style" debugging output and structured data
-logging, because it does not pause the application the way JTAG-based I/O does (see
-[`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md) on `xrun --io` vs `xrun --xscope`).
+xSCOPE can carry text writes and structured probes without JTAG's tile-wide debug
+halts. It still has instrumentation and bandwidth costs; lossless mode can stall the
+transmitting core and lossy mode can drop packets. See the
+[XTC fast-printf guide](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/quick-start/fast-printf.html)
+and [xSCOPE reference/FAQ](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/xscope/index.html)
+for the selected toolchain's setup and transport limits.
+
+### Configure xSCOPE text I/O
 
 1. Create an xSCOPE config file (conventionally `<name>.xscope`), e.g.:
 
@@ -202,8 +224,8 @@ logging, because it does not pause the application the way JTAG-based I/O does (
    <xSCOPEconfig ioMode="basic" enabled="true"></xSCOPEconfig>
    ```
 
-   Use `ioMode="timed"` instead of `"basic"` to add timestamps to output (at the cost of some
-   additional buffering).
+   Use `ioMode="timed"` instead of `"basic"` to add timestamps to output, reducing
+   the amount of data that can be buffered.
 
 2. Pass this config file to `xcc` as an input at **both compile and link** time (alongside your
    source files), or use `xcc -fxscope[=link]` to enable basic xSCOPE support without a separate
@@ -215,14 +237,11 @@ logging, because it does not pause the application the way JTAG-based I/O does (
    xrun --xscope a.xe
    ```
 
-**Plain `printf`/`debug_printf` text output doesn't require any of the above.** The steps above
-(an `.xscope` config file or `-fxscope`) are only needed for structured **data probes** (below,
-`xscope_int(...)` etc.) — ordinary text output (e.g. `lib_logging`'s `debug_printf`, or plain
-`printf`) goes over `_write(FD_STDOUT, ...)` and is captured correctly by `xrun --xscope a.xe` (or
-`xrun --io a.xe`) even when the `.xe` was built with no `.xscope` file and no `-fxscope` flag at
-all — confirmed with `lib_logging`'s `app_debug_printf` example, which has neither and prints
-correctly under both `--io` and `--xscope`. Reach for a compile-time `.xscope` config/`-fxscope`
-only once you need probes/VCD data logging, not just to get basic text output working.
+Seeing ordinary stdout under a host command does not prove the application was built
+to send it over xSCOPE. Verify the build inputs and required board xLINK wiring;
+do not infer the transport or its timing properties merely from printed text.
+The documented xSCOPE `ioMode` accelerates **write** syscalls; other calls such as
+`read` still use JTAG. See the FAQ before relying on file I/O semantics.
 
 ### Data probes
 
@@ -248,7 +267,7 @@ xrun --xscope --xscope-file xscope.vcd a.xe
 |---|---|
 | Step through code, inspect variables, set breakpoints | `xgdb` (or `xrun`/VS Code Debug for common cases) |
 | Understand behavior across multiple tiles/cores simultaneously | `xgdb` `info inferiors` / `tile <n>` |
-| Fast text/log output without disturbing real-time behavior | xSCOPE (`xrun --xscope`) |
+| Lower-impact text/log output, with bandwidth and overhead checked | Configured xSCOPE I/O (`xrun --xscope`) |
 | Structured/waveform data logging | xSCOPE probes → VCD → GTKWave |
 | Function/statement-level performance profiling on hardware | `xgdb -ex "connect --gprof" ...` → `xobjdump -s` → `xgprof` |
 | Function/statement/address-level performance profiling in the simulator | `xsim a.xe --gprof` |

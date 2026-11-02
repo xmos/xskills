@@ -1,15 +1,41 @@
 ---
 name: xmos-build-system
-description: Use when building or rebuilding an XMOS application from the command line for any reason — including rebuilding after a code edit to check warnings/errors or verify a fix — setting up a CMakeLists.txt or lib_build_info.cmake for an XMOS project, choosing between XCommon CMake and a direct xcc invocation, configuring APP_DEPENDENT_MODULES/LIB_DEPENDENT_MODULES dependency versions, reading the sandbox manifest.txt, or diagnosing build errors like missing .xn target files, "-report" stack/memory warnings, or a plain `cmake --build`/`make` invocation failing with "execution of make failed" (XCommon CMake projects build via `xmake -C build <target>`, not a raw CMake build invocation), or a suspected stale build cache (e.g. after changing options or branches), or slow builds where `xmake -j` doesn't help on Windows. Covers XTC Tools 15.3.1 XCommon CMake.
+description: Use when building or rebuilding XMOS software, selecting or identifying its build system (recommended XCommon CMake, legacy Make-based XCommon or Waf-based xwaf), setting up CMakeLists.txt or lib_build_info.cmake, configuring dependency versions, reading manifest.txt, or diagnosing target, stack/memory, build-driver or stale-cache errors. Includes direct xcc for small examples. Covers XTC Tools 15.3.1 XCommon CMake; follow repository documentation for legacy workflows.
 ---
 
 # XMOS build system
 
-XTC Tools 15.3.1 uses **XCommon CMake** as its standard build system for real applications. Direct
-`xcc` invocation is only appropriate for small, single-file examples.
+**Prefer XCommon CMake for new XMOS projects and new build-system work.** It is
+CMake-based and is the recommended default. Use another system only for a concrete
+compatibility or project requirement. Direct `xcc` invocation is useful for small,
+standalone examples.
 
 Requires the XTC Tools environment to be active — see
 [`xmos-environment-setup`](../xmos-environment-setup/SKILL.md).
+
+## Identify the project's build system
+
+Existing repositories may use legacy **Make-based XCommon** or **Waf-based xwaf**.
+Read the repository's README, build files and CI before selecting commands:
+
+| System | Typical indicators |
+|---|---|
+| XCommon CMake | `CMakeLists.txt` including `xcommon.cmake`; `lib_build_info.cmake` module metadata |
+| Legacy XCommon | Makefiles including the XCommon build infrastructure; `module_build_info` metadata |
+| xwaf | `wscript` files and repository instructions invoking `xwaf` |
+
+These are clues, not definitive tests: a repository may contain multiple build systems
+or a generic CMake/Make/Waf project unrelated to the corresponding XMOS framework.
+The use of `xmake` alone does not distinguish the two XCommon systems; XCommon CMake
+also uses generated Makefiles in the workflow below.
+
+During maintenance, follow the established build workflow and preserve supported
+toolchain/dependency versions. Keeping a working legacy build for an unrelated fix
+is a valid compatibility reason; do not migrate it automatically. For a requested
+migration, prefer XCommon CMake and verify equivalent targets, options, dependencies
+and tests. Use the repository's documented commands for legacy XCommon or xwaf rather
+than applying the CMake-specific commands and variables below to them. Run any xwaf
+Python tooling in a compatible virtual environment.
 
 ## XCommon CMake (preferred for real projects)
 
@@ -218,11 +244,15 @@ versions a given build actually used.
 
 XCommon CMake resolves its own support files via `XMOS_CMAKE_PATH`
 (`<XMOS_TOOL_PATH>/build/xcommon_cmake` — see
-[`xmos-toolchain-paths`](../xmos-toolchain-paths/SKILL.md)) and caches fetched library dependencies
-under `XMOS_HOME`. The full XCommon CMake reference lives at
-<https://www.xmos.com/documentation/XM-015090-PC/html/> (a separate documentation site from the XTC
-Tools manual); consult it directly for variables not covered here rather than guessing at their
-names.
+[`xmos-toolchain-paths`](../xmos-toolchain-paths/SKILL.md)).
+
+### Locating dependency sources
+
+Consult the [XCommon CMake documentation](https://www.xmos.com/documentation/XM-015090-PC/html/)
+for the project's XCommon CMake version to establish dependency search locations,
+checkout behaviour and overrides. Before editing a dependency, inspect the configure
+output and generated `manifest.txt` to identify the sources actually used, and check
+that checkout's status so local changes are not overwritten.
 
 A worked example using XCommon CMake ships with the tools under
 `<XMOS_TOOL_PATH>/examples/ExampleXCommonCMake` (see its own `README` for exact steps). Copy it to a
@@ -252,22 +282,27 @@ beyond a quick example.
 | `-fxscope[=link]` | Enables xSCOPE without a separate `.xscope` config file — see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md). |
 | `-mcmodel=small\|large\|hybrid` | Selects the memory model (per source file); `small` (default) is most efficient but requires a tile's static data to fit in one contiguous 256KB region; switch to `hybrid`/`large` only if the linker reports a size/range error — see [`xmos-c-programming`](../xmos-c-programming/SKILL.md) for the full explanation. |
 
-## Suspected stale build cache: delete the build directory
+## Suspected stale build cache
 
 CMake caches configure-time decisions in the build directory (`CMakeCache.txt`, generated sources,
 fetched/generated tables), and changing options, dependency versions or branches does not always
-invalidate them. If a build fails in a way that suggests stale cached state — for example
-undefined references to symbols that should be generated or provided by a dependency, or a setting change that
-seems to have no effect — delete the build directory and configure and build again from scratch:
+invalidate them. Symptoms include undefined references to symbols that should be generated or
+provided by a dependency, or a setting change that seems to have no effect.
 
-```sh
-rm -rf build            # PowerShell: Remove-Item -Recurse -Force build
-cmake -G "Unix Makefiles" -B build
-xmake -C build
-```
+1. Identify the actual build directory and record its configure options (for example from
+   `CMakeCache.txt` or the command used), so the build can be reproduced.
+2. Test the hypothesis with a clean configure in a separate directory, preserving the existing
+   one as evidence:
 
-Do this before investigating which cache variable is stale, and don't work around it by switching
-to a different build directory; a clean reconfigure is quicker and settles the question.
+   ```sh
+   cmake -G "Unix Makefiles" -B build_clean <same options>
+   xmake -C build_clean
+   ```
+
+3. If the clean build succeeds, the old directory was stale. Remove it only once its contents are
+   confirmed to be generated and disposable, then regenerate it if the project expects that path.
+4. If the clean build fails the same way, the problem is in the configuration, sources or
+   dependencies, not stale cache; investigate those instead.
 
 ## After building
 

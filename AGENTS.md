@@ -37,8 +37,9 @@ and verification requirements also apply to maintenance work.
    supports instruction/cycle analysis; its wall-clock runtime is not target execution time.
    Validate real peripheral timing and end-to-end hardware behaviour on hardware (`xrun`). See
    [`xmos-run-and-simulate`](./skills/xmos-run-and-simulate/SKILL.md).
-6. **Prefer xSCOPE over JTAG `--io` for logging.** `xrun --io` halts all logical cores on a tile per
-   transfer and has no buffering; `xrun --xscope` does not. See
+6. **Prefer configured xSCOPE I/O over JTAG `--io` for logging.** JTAG debug transfers halt
+   all hardware threads (logical cores) on a tile. The configured xSCOPE write path avoids those tile-wide
+   halts, but still has overhead and bandwidth limits. See
    [`xmos-debugging-profiling`](./skills/xmos-debugging-profiling/SKILL.md).
 7. **Cite the source.** When giving XMOS-specific guidance, prefer information verified in the XTC
    Tools 15.3 documentation or the XS3 architecture manual over general embedded knowledge. If

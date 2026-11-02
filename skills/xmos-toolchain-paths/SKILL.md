@@ -54,8 +54,8 @@ guessing.
 - `XMOS_CMAKE_PATH` points at the XCommon CMake support files:
   `<XMOS_TOOL_PATH>/build/xcommon_cmake`. See
   [`xmos-build-system`](../xmos-build-system/SKILL.md) for how this is used.
-- `XMOS_HOME` (default `~/.xmos` on macOS/Linux, `%USERPROFILE%\.xmos` on Windows) is where XCommon
-  CMake caches fetched library dependencies, separate from the tools install itself.
+- To locate the library dependency sources a build uses, see
+  [locating dependency sources](../xmos-build-system/SKILL.md#locating-dependency-sources).
 
 ## Environment variables that affect compiler search paths
 

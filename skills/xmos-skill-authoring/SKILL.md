@@ -44,7 +44,11 @@ relevant — `AGENTS.md` is always loaded, so it must stay concise.
 6. Use a `references/` subfolder for skill-specific supporting material that would make `SKILL.md`
    unwieldy, and link to it from the skill. Do not use it to store copies or rewritten versions of
    existing documentation; moving duplicated information out of `SKILL.md` does not prevent drift.
-7. Add a row to the skills index table in [`AGENTS.md`](../../AGENTS.md).
+7. Add entries to the skills indexes in [`AGENTS.md`](../../AGENTS.md) and
+   [`README.rst`](../../README.rst).
+8. Keep resources a skill needs (scripts, references) inside its own directory and link them
+   relatively. Links to other skills and repository-root files are navigation aids that may be
+   missing when a skill is installed on its own; don't make them essential to completing the task.
 
 ## Updating an existing skill
 
@@ -56,7 +60,8 @@ confirmed facts.
 ## Deleting a skill
 
 If a skill becomes fully obsolete or is entirely superseded by another one, delete its folder,
-remove its row from the skills index in [`AGENTS.md`](../../AGENTS.md), and update any
+remove its entries from the skills indexes in [`AGENTS.md`](../../AGENTS.md) and
+[`README.rst`](../../README.rst), and update any
 cross-links in other skills that referenced it — don't leave a dangling entry or a broken relative
 link behind.
 

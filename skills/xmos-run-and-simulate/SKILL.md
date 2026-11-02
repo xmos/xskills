@@ -27,11 +27,13 @@ xrun --adapter-id <serial> a.xe   # select a specific adapter when more than one
 
 ### `--io` vs `--xscope` for host communication
 
-If your program needs to communicate with the host (e.g. `printf`, file I/O), you must pick one of:
+Select host I/O according to the program's build configuration and board wiring:
 
-- **`--xscope`** (recommended in almost all cases): fast I/O over the xtag's dedicated xSCOPE
-  xLINK channel, buffered on the adapter. Does not interrupt program execution.
-- **`--io`**: system calls delivered over JTAG. This is **slow** and **pauses every logical core on
+- **`--xscope`**: use with a program configured for xSCOPE I/O or probes and the required
+  xLINK wiring. The write path avoids JTAG's tile-wide debug halts, but instrumentation
+  has overhead and may drop packets or stall according to configuration. This does not
+  accelerate every host syscall or guarantee unchanged real-time behaviour.
+- **`--io`**: system calls delivered over JTAG. This is **slow** and **pauses every hardware thread on
   the tile** for each transfer, which will likely break any real-time guarantees in the
   application. Only use `--io` for quick throwaway examples, or on platforms where the xSCOPE xLINK
   wiring isn't present.
@@ -51,8 +53,9 @@ For a program that runs to completion this is fine, but many real XMOS applicati
 audio device reference design — are designed to run **indefinitely**, streaming/servicing the host
 forever under normal operation. Run one of those with `--io`/`--xscope` and `xrun` will simply never
 return, which will hang a script, an agent's synchronous tool call, or a terminal waiting for the
-prompt back — this is a workflow/expectation problem, not a hardware fault, and no error will be
-printed since nothing has actually gone wrong.
+prompt back. This can be expected, but does not establish correct execution: a deadlock
+or unexpected wait can look the same. Define a progress marker, expected output/state
+or other task-specific observation before treating the run as successful.
 
 - If you don't need host I/O at all, use plain `xrun a.xe` (no `--io`/`--xscope`) — it loads,
   starts the program, and returns immediately, leaving the device running.
@@ -78,7 +81,7 @@ Always run `xrun --list-devices` first when hardware isn't behaving — it's the
 | Multiple adapters connected, wrong board gets programmed | Use `xrun --list-devices` to get each adapter's ID/serial, then target the right one explicitly with `--adapter-id <serial>`. |
 | `xrun --list-devices` briefly reports "No Available Devices Found" for an adapter that was working moments earlier | Can be a transient USB re-enumeration, not necessarily a real disconnect. On Windows, check the adapter's PnP entry (`Get-PnpDevice`) — `ConfigManagerErrorCode`/`Problem` of `CM_PROB_PHANTOM` ("device is not connected", Code 45) means Windows still has a stale device record; simply retrying `xrun --list-devices` a little later often finds the adapter again once it re-enumerates, with no cable/driver action needed. |
 | App loads and starts, but then raises an exception (e.g. `ET_ECALL`) during board/hardware init | The device *is* being programmed successfully, so this usually isn't an `xrun` problem at all — check the physically connected board actually matches the target the `.xe` was built for (`APP_HW_TARGET`/`.xn` file, see [`xmos-build-system`](../xmos-build-system/SKILL.md)); see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md) for interpreting the exception itself. |
-| `xrun --io`/`--xscope` command produces no output and never returns control | Not an error — the device loaded and is running correctly, but `--io`/`--xscope` block until the program exits, and the program (e.g. a USB audio device) is designed to run indefinitely. See "`--io`/`--xscope` block until the program exits" above. |
+| `xrun --io`/`--xscope` command produces no output and never returns control | May be expected for an indefinite application, but is not proof of correct execution. Check expected progress, I/O configuration and whether tasks are blocked; see the lifetime discussion above. |
 
 
 ## `xsim`: simulating without hardware
@@ -139,9 +142,10 @@ output was simply never flushed before the simulator was killed. This differs fr
 
 - Do **not** treat "no printed output" from a `--max-cycles`-bounded run as evidence a code path
   wasn't reached, or as a functional failure — for an indefinitely-running program, a bounded
-  `xsim` run mainly proves "it started and didn't crash/hang within N cycles", not "expected output
-  was produced". Only a program that terminates on its own (so stdio flushes at exit) gives a
-  reliable printed-output check.
+  run reaching its limit does not prove progress or freedom from deadlock. Check a defined
+  observation within the simulated interval. For an output-based test, arrange for output
+  to be flushed and verify the expected text or state; normal termination is one way
+  to flush buffered stdio.
 - If you need to confirm output specifically, prefer `debug_printf` (unbuffered) over plain `printf`
   when instrumenting code that will be smoke-tested with a bounded/indefinite `xsim` run.
 
@@ -166,8 +170,9 @@ Useful options:
 - `--max-cycles <n>` — stop after `n` simulated cycles (useful to bound a run in CI, e.g. to smoke-test
   an app that normally runs indefinitely). Reaching the bound prints `xsim: error: C51188: maximum
   cycles reached (n)` and **exits with a nonzero code** — this is the expected/intentional way a
-  bounded run ends, not a functional failure; distinguish it from a real simulator/hardware exception
-  by checking the message text, not just the exit code.
+  bounded run ends, not by itself a functional pass or failure. Distinguish it from an
+  exception, then evaluate the test's required observations. If completion was required
+  and did not occur, the run has not passed.
 - `--trace` / `-t` — full instruction trace to stdout (or `--trace-to <file>` to write it to a file
   instead, recommended — the trace is large, e.g. tens of MB for well under a second of simulated
   time). Each line is annotated with the enclosing function name/offset (e.g.

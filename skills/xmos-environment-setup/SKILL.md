@@ -68,26 +68,44 @@ session has not inherited the required environment.
 
 ## macOS
 
-1. Open a Terminal window.
-2. Run the `SetEnv.command` script from inside the tools installation directory, e.g.:
+**Interactively**: run the installation's `SetEnv.command`, e.g.
+`/Applications/XMOS_XTC_15.3.1/SetEnv.command`. It sources `SetEnv.sh` and then starts a
+new configured `bash` shell; enter XTC Tools commands in that shell. It does not activate
+the shell that launched it.
 
-   ```sh
-   /Applications/XMOS_XTC_15.3.1/SetEnv.command
-   ```
+**Non-interactively (agents, scripts, CI)**: do not use `SetEnv.command`, which waits in a
+new shell. Source the selected installation's `SetEnv.sh` and run the commands in the same
+shell call, from the project directory:
 
-   All XTC Tools commands must be entered in a Terminal in which this command has been run.
+```sh
+source "/Applications/XMOS_XTC_15.3.1/SetEnv.sh" &&
+xcc --version &&
+xmake -C build
+```
+
+Substitute the path of the installation the project requires.
 
 ## Linux
 
-1. Open a Terminal window.
-2. `cd` into the tools installation directory, then `source` the `SetEnv` script:
+**Interactively**: in a terminal, `cd` into the tools installation directory and `source`
+its `SetEnv` script, then run XTC Tools commands in that same terminal:
 
-   ```sh
-   cd ~/XMOS/XTC/15.3.1   # default install location - see below
-   source SetEnv
-   ```
+```sh
+cd ~/XMOS/XTC/15.3.1   # default install location - see below
+source SetEnv
+```
 
-   All XTC Tools commands must be entered in a Terminal in which this command has been run.
+**Non-interactively (agents, scripts, CI)**: activate and run the commands in the same shell
+call. The documented activation runs from the installation directory, so return to the
+project directory before building:
+
+```sh
+cd ~/XMOS/XTC/15.3.1 && source SetEnv && cd - >/dev/null &&
+xcc --version &&
+xmake -C build
+```
+
+Run this from the project directory, substituting the installation the project requires.
 
 ### Default Linux install location
 

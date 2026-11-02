@@ -57,6 +57,13 @@ Adjust the example paths below to match your checkout. Install whole skill
 directories, including their scripts and resources, rather than just copying
 ``SKILL.md`` files.
 
+Skills link to related skills and to repository files such as ``README.rst``
+and ``AGENTS.md`` using paths relative to this checkout. Copying an individual
+skill does not copy those targets. If a linked file or skill is missing, find
+the related skill by its installed name, or read it from an accessible xskills
+checkout or the same release on GitHub, rather than a different version.
+Linking the whole ``skills/`` directory keeps these references working.
+
 Skills and core instructions
 ----------------------------
 
