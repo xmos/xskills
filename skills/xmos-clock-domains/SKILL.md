@@ -1,129 +1,77 @@
 ---
 name: xmos-clock-domains
-description: Use when reasoning about xcore.ai clock domains -- the System/Core PLL, the Secondary/Application PLL, the reference clock, switch clock, and tile clock -- when changing clock frequencies via the XN file or PLL registers, or when a hardware-timer/port-timing measurement looks wrong after a clock change. Covers AN02022 (xcore.ai Clock Frequency Control).
+description: Use when reasoning about xcore.ai clock domains, changing frequencies through XN configuration or PLL registers, diagnosing timing after a clock change, or choosing between clock generation and tracking an external reference. Consult device-specific datasheets and errata, AN02022 and the applicable XTC Tools documentation.
 ---
 
 # xcore.ai clock domains
 
-**Source**: AN02022 *xcore.ai Clock Frequency Control*, publicly available at
-<https://www.xmos.com/documentation/XM-014200-AN/html/doc/rst/an02022.html>. Fetch it directly for
-exact PLL register bit layouts, additional worked frequency examples, or the Secondary PLL
-fractional-divider math — this skill summarizes the concepts and the facts most likely to bite an
-agent, not the full register reference.
+Use this workflow to identify the right clock and configuration method. Obtain exact
+limits, register definitions and programming sequences from the applicable documentation
+rather than treating examples or remembered values as device-independent guarantees.
 
-## The clock tree
+## Establish the target and sources
 
-An input clock/crystal on `XIN` (8–30 MHz) drives the **System PLL** (aka Core/Primary PLL), which
-produces a high-frequency **system clock**. Dividers then derive, from that system clock:
+Identify the exact device/part, silicon revision where relevant, board, XTC version
+and required clock behaviour. Read the board's clock wiring, oscillator information,
+project XN file, boot configuration and any runtime clock changes.
 
-- the **xcore tile clock(s)** — the clock each tile's execution unit runs at,
-- the **xCONNECT switch clock**, and
-- the **reference clock** — which drives **hardware timers, ports, and clock blocks** (see
-  [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)).
+Consult these sources for their distinct purposes:
 
-A separate **Secondary PLL** (aka Application PLL) can independently generate one more frequency,
-typically for external devices/peripherals (e.g. an audio codec, LPDDR, MIPI) rather than for the
-tiles themselves.
+- **The exact device's datasheet and applicable errata:** clock tree, supported clock
+  sources and routing, operating conditions, frequency/PLL limits, register definitions
+  and revision-specific restrictions. Obtain these from the device's official product
+  page or documentation downloads on [xmos.com](https://www.xmos.com/), or an identified
+  official local copy. A shared architecture does not imply identical device limits.
+- **[AN02022: xcore.ai Clock Frequency Control](https://www.xmos.com/documentation/XM-014200-AN/html/doc/rst/an02022.html):**
+  clock relationships, configuration approaches and worked examples. Check its scope
+  against the target; examples do not override the device's datasheet or errata.
+- **[XTC Tools 15.3 documentation](https://www.xmos.com/documentation/XM-014363-PC/html/):**
+  XN clock attributes and how the selected tools configure clocks when loading,
+  debugging or booting an image. Use documentation matching the project's toolchain.
+- **Board documentation:** the actual fitted clock sources and connections, which
+  can differ from the device's available clocking options.
 
-At reset/boot the System PLL defaults to values that support an 8–30 MHz `XIN` and produce a
-133–500 MHz tile clock and (by default) a **100 MHz reference clock**. Applications very commonly
-reprogram the PLL on boot to run tiles faster (e.g. 600/800 MHz) — **do not assume the reset
-defaults hold**; check the project's XN file or PLL-configuration code.
+Record document revisions and relevant sections for recommendations. If online sources
+are inaccessible, use accessible official copies and identify their versions. If essential
+evidence is unavailable, explain the gap; do not invent numerical limits or register recipes.
+If references disagree, identify the discrepancy and verify which applies to the selected
+device and toolchain before recommending a setting; do not silently merge conflicting recipes.
 
-## ⚠️ The reference clock drives hardware timers — and it is configurable
+## Keep the clock domains distinct
 
-Hardware timers (`hwtimer_get_time`, see
-[`xmos-c-programming`](../xmos-c-programming/SKILL.md)/[`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md))
-and port/clock-block timing all run off the **reference clock**, not directly off the tile clock.
-The 100 MHz figure quoted elsewhere in this repo is the **default/typical** value — it is a
-configurable divider (`REFDIV`) off the system clock, and application code (or an XN file) may
-change it. Concretely:
+- Distinguish System/Core PLL, tile execution clocks, xCONNECT switch clock and reference
+  clock; changing one is not necessarily equivalent to changing the others.
+- Hardware-timer tick conversion depends on the configured reference clock, not the tile
+  execution rate. Check the actual configuration rather than assuming the usual 100 MHz.
+  A changed reference frequency requires reviewing timing constants and affected consumers.
+- For port or clock-block timing, identify the selected clock source and divider rather
+  than assuming every peripheral is clocked directly from the reference clock.
+- Distinguish Secondary/Application PLL clock generation from synchronisation to an external
+  reference. For tracking, investigate an existing implementation such as
+  [lib_sw_pll](https://github.com/xmos/lib_sw_pll), verifying the selected version's
+  documentation and device compatibility before recommending it.
 
-- If a project's XN file sets a non-default `ReferenceFrequency`, or code writes
-  `XS1_SSWITCH_REF_CLK_DIVIDER_NUM` directly (e.g. AN02022's "Fast Reference Clock" recipe, which
-  halves `REFDIV` to double the reference frequency), then **every hardware-timer tick duration
-  changes** — a manual `t1 - t0` elapsed-tick measurement (see
-  [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md)) no longer equals
-  `elapsed / 100` microseconds unless the reference clock is still 100 MHz.
-- Before trusting an elapsed-tick-to-time conversion, confirm the actual configured reference
-  frequency for the target (XN file `ReferenceFrequency` attribute, or the value last written to
-  the reference-clock divider) rather than assuming 100 MHz.
-- Changing the reference clock affects **all** timers/ports/clock-blocks on that tile — not just
-  the one being measured.
-- Remember the `value+1` divider convention applies to **every** PLL/clock divider field
-  (`R`, `F`, `OD`, `REFDIV`, `XCDIV`, `SSDIV`...) — e.g. going from `OD=0` to `OD=1` halves a PLL's
-  output (divisor 1→2), it does not leave it unchanged. This is an easy off-by-one to miss when
-  skimming code that "just sets" a divider field without re-deriving the resulting frequency.
+## Choose and verify the configuration method
 
-## Configuring clocks: prefer the XN file
+Prefer XN configuration for static clock requirements where supported. Check the documented
+meaning and prerequisites of `Oscillator`, `SystemFrequency`, `ReferenceFrequency` and
+`SecondaryFrequency`, including whether the tools can achieve the requested frequency.
+Do not assume a requested value is the actual value. See
+[multi-tile architecture](../xmos-multi-tile-architecture/SKILL.md) for XN context.
 
-For the vast majority of applications, set the desired frequencies declaratively in the project's
-**XN file** (see [`xmos-multi-tile-architecture`](../xmos-multi-tile-architecture/SKILL.md) for XN
-files in general) rather than reprogramming PLL registers by hand:
+For runtime register changes, first consult the applicable programming sequence and errata.
+Verify field encodings and enable controls individually, settling/lock requirements,
+reset effects, and system-wide versus per-tile scope. Do not generalise one divider's
+encoding to all fields or reuse a workaround without checking its device/revision scope.
+For multi-tile changes, establish affected tiles and documented reset/reconfiguration order.
 
-```xml
-<Node Id="0" InPackageId="0" Type="XS3-L16A-1024"
-      SystemFrequency="500MHz" ReferenceFrequency="100MHz" Oscillator="20MHz">
-```
+Check the proposed configuration against the device's operating conditions and the
+requirements of every affected consumer, including communications and externally clocked
+components. Preserve required relationships between domains during transitions as well
+as in the final state. Distinguish reset defaults from boot, loader and runtime settings.
 
-- `Oscillator` — the input frequency on `XIN`. Must be given for `SystemFrequency`/
-  `ReferenceFrequency`/`SecondaryFrequency` to take effect.
-- `SystemFrequency`, `ReferenceFrequency`, `SecondaryFrequency` — desired output frequencies; the
-  tools compute PLL divider values and, for `xflash`, bake the reprogramming sequence into the boot
-  code automatically. `xrun`/`xgdb` reprogram the PLL live via JTAG on `connect`.
-- If a requested frequency can't be hit exactly, the tools pick the closest achievable value and
-  warn (`xflash`/`xgdb` always; `xrun` only with `--verbose`).
-
-## Configuring clocks manually (registers)
-
-Only needed when the XN file's static model isn't enough (e.g. changing frequency at runtime). From
-C (`xs1.h`): `write_sswitch_reg`/`read_sswitch_reg` for system-wide PLL/switch/reference registers,
-`write_pswitch_reg`/`read_pswitch_reg` for per-tile registers.
-
-| Register | Controls | Key fields |
-|---|---|---|
-| `XS1_SSWITCH_PLL_CTL_NUM` | System PLL | `R` (input divider), `F` (multiplier stage), `OD` (output divider); `f_vco = (F+1)/2 * f_in/(R+1)`, `f_out = f_vco/(OD+1)` |
-| `XS1_SSWITCH_CLK_DIVIDER_NUM` | xCONNECT switch clock divider (`SSDIV`) | reset default gives 500 MHz from a 500 MHz system clock |
-| `XS1_SSWITCH_REF_CLK_DIVIDER_NUM` | Reference clock divider (`REFDIV`) | reset default (`4`) gives 100 MHz from a 500 MHz system clock; halving it doubles the reference frequency (max: half the system clock) |
-| `XS1_PSWITCH_PLL_CLK_DIVIDER_NUM` (per tile) | Tile clock divider (`XCDIV`) | **does not take effect until enabled** with `setps(XS1_PS_XCORE_CTRL0, 0x10)` on that tile |
-| `XS1_SSWITCH_SS_APP_PLL_CTL_NUM` | Secondary/Application PLL control (enable, `R`/`F`/`OD`) | see errata sequence below — confirmed in `lib_sw_pll`'s `sw_pll_app_pll_init()` |
-| `XS1_SSWITCH_SS_APP_PLL_FRAC_N_DIVIDER_NUM` | Secondary/Application PLL fractional-N divider | top bit enables the frac-n block; this is what a software PLL (e.g. `lib_sw_pll`) steps at runtime to fine-tune the output frequency |
-| `XS1_SSWITCH_SS_APP_CLK_DIVIDER_NUM` | Secondary/Application PLL output clock divider | top bit enables the divided output |
-
-**Constraints that always apply**: `XIN` 8–30 MHz; PLL VCO 360–1800 MHz; PLL output <800 MHz;
-comparator frequency 220 kHz–1800 MHz; tile frequency must not be less than the reference
-frequency; and the device's own datasheet maximum operating frequency.
-
-**Warning**: writing the System PLL control register can reset the xCORE tile. On a multi-tile
-device, reset tile 0 last if resetting multiple tiles.
-
-### Secondary/Application PLL: control-register write errata
-
-Naively writing `XS1_SSWITCH_SS_APP_PLL_CTL_NUM` once to change the Secondary/Application PLL's
-`R`/`F`/`OD` values live does not reliably apply them — there's a known chip erratum where the new
-`F`/`OD` divider values are only captured correctly if the control register is written with the PLL
-disabled, then re-enabled, **twice**: disable, enable (captures dividers on a running clock),
-enable again (same value, forces the capture), then disable/enable once more to get the full ~5us
-reset with the correct values, followed by a settling delay (`lib_sw_pll`'s
-`sw_pll_app_pll_init()` waits 500us) before touching the fractional-N or output-divider registers.
-Skipping this sequence (a single disable+enable) can silently leave the PLL running at stale
-divider values. This is specific to the Secondary/Application PLL control register — the System
-PLL recipes above don't need it.
-
-## Common recipes (see AN02022 for full code)
-
-| Goal | Approach |
-|---|---|
-| Run tiles faster/slower than boot default | Set `SystemFrequency`/`Oscillator` in the XN file (preferred) |
-| Faster hardware-timer/port resolution | Reduce `REFDIV` ("Fast Reference Clock") — remember this changes the tick rate for *all* timers/ports on the tile |
-| Lower dynamic power, single-tile app | Reduce the switch clock (`SSDIV`) once configuration is done — the switch is only needed for config on a single-tile app |
-| Lower dynamic power, one tile doesn't need full speed | Reduce that tile's `XCDIV` **and** call `setps(XS1_PS_XCORE_CTRL0, 0x10)` |
-| Very low power / USB suspend | Bypass the System PLL (feed `XIN` straight through) then drop `F` low |
-| Clock an external device (codec, LPDDR, MIPI) | Configure the Secondary/Application PLL, routed via `X1D11`/port 1D on tile 1 for a generic application clock |
-| Phase-lock a generated clock to an external reference | The Secondary/Application PLL alone is **not** phase-locked — it can't natively track an external reference. `lib_sw_pll` builds a hybrid software/hardware PLL on top of it: a PFD implemented with a port/clock-block edge count, a PI control loop, and a DCO that steps `XS1_SSWITCH_SS_APP_PLL_FRAC_N_DIVIDER_NUM` (LUT or sigma-delta variant) at runtime — confirmed working end-to-end on real `XK-EVK-XU316` hardware (`lib_sw_pll`'s `app_simple_lut`/`app_simple_sdm` examples). Reach for this pattern (or the library itself) instead of hand-rolling PLL-register writes when the goal is tracking, not just generating, a clock. |
-
-## When to fetch the full appnote
-
-Pull AN02022 directly when you need: exact PLL register bit offsets/values, the Secondary PLL's
-fractional-divider math for a specific target frequency, jitter-minimization guidance, or the full
-low-power bypass-mode sequence.
+Explain the chosen source, resulting clocks, applicable limits and timing implications
+with references. Verify actual hardware/peripheral behaviour on hardware; simulator
+wall-clock runtime is not target execution time. See
+[debugging/profiling](../xmos-debugging-profiling/SKILL.md) for measurements and
+[run/simulate](../xmos-run-and-simulate/SKILL.md) for execution.

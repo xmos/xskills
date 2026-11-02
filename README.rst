@@ -22,6 +22,7 @@ Skills
 
 * `xmos-build-system <skills/xmos-build-system/SKILL.md>`_: Build and configure XCommon CMake projects.
 * `xmos-c-programming <skills/xmos-c-programming/SKILL.md>`_: Write multicore XCORE C using ``lib_xcore``.
+* `xmos-capability-discovery <skills/xmos-capability-discovery/SKILL.md>`_: Find and verify existing XMOS software using accessible official sources.
 * `xmos-clock-domains <skills/xmos-clock-domains/SKILL.md>`_: Configure and reason about xcore.ai clocks.
 * `xmos-debugging-profiling <skills/xmos-debugging-profiling/SKILL.md>`_: Debug and profile with xgdb, xSCOPE, and xgprof.
 * `xmos-embedded-c-practices <skills/xmos-embedded-c-practices/SKILL.md>`_: Apply safe, efficient embedded C practices.
