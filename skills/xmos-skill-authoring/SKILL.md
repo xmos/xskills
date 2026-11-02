@@ -40,6 +40,7 @@ relevant — `AGENTS.md` is always loaded, so it must stay concise.
 6. If the skill needs large reference material (big tables, exhaustive option lists), put it in a
    `references/` subfolder next to `SKILL.md` and link to it, keeping the main file scannable.
 7. Add a row to the skills index table in [`AGENTS.md`](../../AGENTS.md).
+8. Add a brief description of the skill in the bullet list in [`README.md`](../../README.md).
 
 ## Updating an existing skill
 
