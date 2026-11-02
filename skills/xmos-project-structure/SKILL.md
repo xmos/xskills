@@ -124,16 +124,21 @@ export MPLBACKEND=Agg      # bash/zsh
 Confirmed empirically: `lib_sw_pll`'s pure-Python `SimDut`-based tests (no compiled `.xe`/hardware
 needed) went from 11 errors to 0 once `MPLBACKEND=Agg` was set, with no other change.
 
-### Not every `lib_*` repo's `tests/` directory is a Python/pytest suite — check first
+### Identify the test workflow before running tests
 
-Some `lib_*` repos' `tests/` directories are pure Python (`pytest`), but others are ordinary
-XCommon CMake **C applications** using the Unity test framework, with no Python involved in running
-them at all — check for a `tests/CMakeLists.txt` with `include($ENV{XMOS_CMAKE_PATH}/xcommon.cmake)`
-before assuming a `tests/` directory needs pytest. Such tests are built and run like any other
-application (see [`xmos-build-system`](../xmos-build-system/SKILL.md) and
-[`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md)); check for build options that shorten
-runs. A C-based test suite doesn't need pytest, but Python scripts invoked during its build (for
-example table generators) still need a suitable virtual environment.
+Read the repository's README and test documentation, then inspect its CI configuration —
+particularly the `Jenkinsfile` and any scripts it invokes — for supported test commands, build
+options and prerequisites. CI may depend on internal tooling or hardware fixtures, so identify
+which steps can be reproduced locally rather than copying the pipeline blindly.
+
+Do not infer the runner from a `tests/` directory or one file type alone: Python tests may build
+or launch target applications, and target builds may invoke Python generators. Establish whether
+the selected tests need a host runner, the simulator, hardware or additional fixtures.
+
+Use the documented environment and dependency versions. Run Python tooling in a virtual
+environment, activate XTC Tools when required, and select the smallest documented test target
+that verifies the change. See [`xmos-build-system`](../xmos-build-system/SKILL.md) and
+[`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md) for target applications.
 
 ## Where things live
 
