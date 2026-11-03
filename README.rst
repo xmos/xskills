@@ -241,6 +241,32 @@ Start a fresh agent session after updating; Copilot CLI can use
 ``/skills reload``. OpenCode remote-config fetches updates on startup from the
 configured branch. A tag or commit reference remains pinned to that version.
 
+Repository validation
+=====================
+
+The repository validation suite checks Agent Skills frontmatter, skill names,
+local links, bundled script references, skill indexes, the instruction manifest,
+and README RST syntax. They require Python 3.12 and Git, but no XTC Tools or
+hardware. External URLs and the technical behaviour of skills are not tested.
+
+Run the same suite locally from the repository root using a virtual environment.
+
+macOS/Linux:
+
+.. code-block:: bash
+
+   python3 -m venv .venv
+   .venv/bin/python -m pip install -r tests/requirements.txt
+   .venv/bin/python -m pytest tests
+
+Windows PowerShell:
+
+.. code-block:: powershell
+
+   py -3.12 -m venv .venv
+   .venv\Scripts\python.exe -m pip install -r tests/requirements.txt
+   .venv\Scripts\python.exe -m pytest tests
+
 Feedback and contributions
 ==========================
 
@@ -264,6 +290,8 @@ Repository structure
    ├── AGENTS.md
    ├── CLAUDE.md
    ├── manifest.json
+   ├── Jenkinsfile
+   ├── tests/                           # structural validation suite
    ├── .github/copilot-instructions.md
    ├── .cursor/rules/xmos.mdc
    └── skills/
@@ -276,4 +304,3 @@ Licence
 
 Copyright 2026 XMOS LIMITED. This Software is subject to the terms of the
 `XMOS Public Licence: Version 1 <LICENSE.rst>`_.
-
