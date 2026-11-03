@@ -83,157 +83,91 @@ build targets, fetches missing dependencies into the sandbox, and populates the 
 variables may appear before or after `project()` — the only hard requirement is that they all
 precede `XMOS_REGISTER_APP()`.
 
-### Key application variables
+Keep the target the project specifies. `XCORE-AI-EXPLORER` and `XK-EVK-XU316` are target names for
+the same board.
 
-| Variable | Required? | Purpose |
-|---|---|---|
-| `APP_HW_TARGET` | Required (unless doing a native/host build) | Target board name (e.g. `XCORE-AI-EXPLORER`) or an `.xn` file — just the filename is needed; child directories are searched for it. |
-| `XMOS_SANDBOX_DIR` | Required if `APP_DEPENDENT_MODULES` is non-empty | Path to the sandbox root, conventionally `${CMAKE_CURRENT_LIST_DIR}/../..`. See [`xmos-project-structure`](../xmos-project-structure/SKILL.md). |
-| `APP_DEPENDENT_MODULES` | Optional | This app's **direct** dependencies only (sub-dependencies are pulled in automatically from each module's own `LIB_DEPENDENT_MODULES`). Must be quoted — see "Dependency version format" below. |
-| `APP_C_SRCS` / `APP_XC_SRCS` / `APP_CXX_SRCS` / `APP_ASM_SRCS` | Optional | Explicit source file lists. If unset, all matching files under `src/` (recursively) are compiled automatically; set to `""` to compile none of that language. |
-| `APP_COMPILER_FLAGS` | Optional | Flags for all sources, e.g. `-g` (needed by `xgdb` — see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md)), `-O3`, `-DMY_DEF=123`. Also settable per-config (`APP_COMPILER_FLAGS_<config>`) or per-file (`APP_COMPILER_FLAGS_<filename>`). |
-| `APP_INCLUDES` | Optional | Extra include directories. |
-| `APP_DEPENDENT_ARCHIVES` | Optional | Static-library archives to link (the static lib must also be listed in `APP_DEPENDENT_MODULES`). |
-| `APP_XSCOPE_SRCS` | Optional | `.xscope` config files (auto-discovered under `src/` if unset) — see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md). |
-| `APP_PCA_ENABLE` | Optional | Enables Pre-Compilation Analysis (whole-program optimization, XC sources only). Default `OFF`. |
-| `XMOS_DEP_DIR_<module>` | Optional | Overrides where a specific dependency is found on disk instead of the sandbox root — useful for pointing at a local working copy. |
+### Variables, modules and dependencies
 
-Some boards are known to the tools under more than one `APP_HW_TARGET` name. For example
-`XCORE-AI-EXPLORER` and `XK-EVK-XU316` are two separate `.xn` files shipped under
-`<XMOS_TOOL_PATH>/targets/`, but describe the electrically identical board (same tile/port/JTAG
-topology, confirmed by diffing the two `.xn` files) — either name builds and runs correctly on a
-physical XK-EVK-XU316 (e.g. `lib_board_support`'s own `app_evk_316_simple_c` example targets
-`XCORE-AI-EXPLORER` specifically because that's the name this exact board shipped under). Don't
-assume a board-name mismatch between two working examples targeting "the same board" is a bug —
-check the actual `.xn` contents (or just try running the `.xe` on the board) before concluding they
-target different hardware.
+Consult the [XCommon CMake documentation](https://www.xmos.com/documentation/XM-015090-PC/html/)
+matching the project's version for application, module (`lib_build_info.cmake`) and static-library
+variables, multi-application layouts, dependency version syntax and resolution, and configuration
+options. Inspect the repository's existing build files before adding settings, and follow its
+established patterns (for example a shared `deps.cmake`, or a raw `FetchContent` block for a
+dependency that lives inside another repository). Do not guess variable names or copy defaults
+from another version.
 
-### Multi-app directories: aggregator `CMakeLists.txt` + shared `deps.cmake`
+Dependency entries are quoted strings because they contain parentheses, e.g.
+`"lib_i2c(6.1.1)"`. Pin exact versions for library repositories as described in
+[dependency version pinning](../xmos-library-repo-style/SKILL.md#dependency-version-pinning).
 
-A `sw_*` repo with several `app_*` variants (e.g. one per hardware board) commonly has a thin
-top-level `CMakeLists.txt` that just aggregates them with plain CMake `add_subdirectory()` — it has
-no `APP_HW_TARGET`/`XMOS_REGISTER_APP()` of its own, since each `app_*` subdirectory is its own real
-build entry point. This same aggregator pattern is equally common for a `lib_*` repo's own
-`examples/` and `tests/` directories (e.g. `lib_i2c/examples/CMakeLists.txt` and
-`lib_xua/examples/CMakeLists.txt` both just `add_subdirectory()` each example/test app and share a
-sibling `deps.cmake`) — it isn't limited to `sw_*` repos, since a library's examples/tests are
-themselves standalone apps, not the library module itself:
+### Multiple applications: share one `deps.cmake`
+
+Applications built in the same sandbox share its dependency checkouts, so they must all use the
+exact same dependency list and versions. When a repository has several applications (e.g. `app_*`
+variants, or a library's `examples/` and `tests/`), define `APP_DEPENDENT_MODULES` once in a
+shared `deps.cmake` and `include()` it from each application's `CMakeLists.txt`, rather than
+repeating the list. This keeps the versions identical by construction:
 
 ```cmake
-# sw_example/CMakeLists.txt - configures every app variant in one `cmake` invocation
-cmake_minimum_required(VERSION 3.21)
-include($ENV{XMOS_CMAKE_PATH}/xcommon.cmake)
-project(sw_example)
-
-add_subdirectory(app_example_board_a)
-add_subdirectory(app_example_board_b)
-```
-
-When every variant shares the same dependencies, factor `APP_DEPENDENT_MODULES` into a single
-`deps.cmake` next to the app directories and `include()` it from each `app_*/CMakeLists.txt`
-(alongside that app's own `APP_HW_TARGET`/`XMOS_REGISTER_APP()`), instead of repeating the
-dependency list in every app:
-
-```cmake
-# sw_example/deps.cmake
+# deps.cmake (next to the app directories)
 set(APP_DEPENDENT_MODULES "lib_foo(1.2.0)" "lib_bar(3.0.0)")
 ```
 
 ```cmake
-# sw_example/app_example_board_a/CMakeLists.txt
+# app_example_board_a/CMakeLists.txt
 cmake_minimum_required(VERSION 3.21)
 include($ENV{XMOS_CMAKE_PATH}/xcommon.cmake)
+project(app_example_board_a)
 
 set(XMOS_SANDBOX_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 include(${CMAKE_CURRENT_LIST_DIR}/../deps.cmake)
-set(APP_COMPILER_FLAGS -O3 -g -Wall)
-
-project(app_example_board_a)
 set(APP_HW_TARGET board_a.xn)
 
 XMOS_REGISTER_APP()
 ```
 
-You can then run `cmake -B build` / `xmake -C build` once from the `sw_*` root to build every app
-variant, or `cd` into a single `app_*` directory to configure/build just that one.
+If a repository already has a `deps.cmake`, add or change dependencies there, not in individual
+applications. A top-level `CMakeLists.txt` that calls `add_subdirectory()` for each application
+lets one configure build them all.
 
-#### `deps.cmake` fetching a non-standalone dependency via plain CMake `FetchContent`
+### Non-standard dependencies
 
-Not every dependency a `deps.cmake` needs is itself a standalone `lib_*` repo resolvable through
-`APP_DEPENDENT_MODULES`'s normal name/version mechanism. `lib_mic_array`'s `examples/deps.cmake` is
-a real example: its `i2s`/`i2c` modules only exist inside a separate monorepo (`fwk_io`), not as
-their own `lib_i2s`/`lib_i2c` checkouts, so it fetches that monorepo directly with plain CMake
-`FetchContent` (using a `git@github.com:...` SSH URL, not the `lib_name(version)` string format)
-into the sandbox root, then points `XMOS_DEP_DIR_i2s`/`XMOS_DEP_DIR_i2c` at subdirectories inside it:
+Not every dependency is a standalone `lib_*` repository fetched by name. A module may live inside
+a larger repository; an existing `deps.cmake` may then fetch that repository with CMake
+`FetchContent` and set `XMOS_DEP_DIR_<module>` so the module resolves inside it. In XTC 15.3.1's
+XCommon CMake, `XMOS_DEP_DIR_<module>` names the directory containing the module's own
+directory, i.e. `<dir>/<module>/lib_build_info.cmake`:
 
 ```cmake
-set(XMOS_DEP_DIR_i2s ${XMOS_SANDBOX_DIR}/fwk_io/modules)
+# deps.cmake: modules i2c and i2s live under <sandbox>/fwk_io/modules/
 set(XMOS_DEP_DIR_i2c ${XMOS_SANDBOX_DIR}/fwk_io/modules)
+set(XMOS_DEP_DIR_i2s ${XMOS_SANDBOX_DIR}/fwk_io/modules)
 if(NOT EXISTS ${XMOS_SANDBOX_DIR}/fwk_io)
     include(FetchContent)
-    FetchContent_Declare(fwk_io GIT_REPOSITORY git@github.com:xmos/fwk_io GIT_TAG feature/xcommon_cmake
-                          SOURCE_DIR ${XMOS_SANDBOX_DIR}/fwk_io)
+    FetchContent_Declare(fwk_io
+        GIT_REPOSITORY https://github.com/xmos/fwk_io
+        GIT_TAG <pinned release tag or commit>
+        SOURCE_DIR ${XMOS_SANDBOX_DIR}/fwk_io)
     FetchContent_Populate(fwk_io)
 endif()
-set(APP_DEPENDENT_MODULES "lib_mic_array" "i2s" "i2c")
+set(APP_DEPENDENT_MODULES "lib_mic_array(<version>)" "i2c" "i2s")
 ```
 
-If you see a raw `FetchContent_Declare`/`FetchContent_Populate` block in a `deps.cmake` (rather than
-just a version string in `APP_DEPENDENT_MODULES`), this is why — it's fetching a shared repo that
-one of the listed modules lives inside, and `XMOS_DEP_DIR_<module>` is what actually redirects that
-module's resolution into the fetched checkout. This requires working `git` SSH access to the target
-host; on a first configure it clones into the sandbox root exactly like a normal dependency (visible
-in `build/manifest.txt`).
+Preserve such arrangements when maintaining a repository, and change them in the shared
+`deps.cmake`. When adding one, pin an accessible release or commit rather than a branch, and
+confirm the override semantics for the project's XCommon CMake version.
 
-### Modules (`lib_build_info.cmake`)
+### Modules and static libraries
 
-A library module (`lib_*`) has no `CMakeLists.txt` of its own — it's never the build entry point.
-Instead it provides `lib_build_info.cmake`, included by anything that depends on it:
+- **Source module:** a `lib_*` repository provides `lib_build_info.cmake` calling
+  `XMOS_REGISTER_MODULE()`; its sources are compiled into each consuming application.
+- **Prebuilt static library:** `lib_build_info.cmake` describes the archive using `LIB_ARCHIVE_*`
+  variables and calls `XMOS_REGISTER_STATIC_LIB()`; consuming applications link the archive.
+- **Archive rebuild:** a static-library repository that ships source may also have its own
+  `CMakeLists.txt` that includes `lib_build_info.cmake` to rebuild the archive. That is a build
+  entry point, unlike a source module.
 
-```cmake
-set(LIB_NAME lib_foo)
-set(LIB_VERSION 3.2.1)
-set(LIB_INCLUDES api)
-set(LIB_COMPILER_FLAGS -Os)
-set(LIB_DEPENDENT_MODULES "lib_bar")     # or "" (quoted empty string) if no dependencies
-
-XMOS_REGISTER_MODULE()
-```
-
-`LIB_NAME`, `LIB_VERSION`, and `LIB_DEPENDENT_MODULES` are required (the last must still be set,
-even if empty). Source-file and compiler-flag variables mirror the `APP_*` ones above but prefixed
-`LIB_` (`LIB_C_SRCS`, `LIB_COMPILER_FLAGS_<filename>`, etc.), scanning `src/` by default. Every
-module also gets an automatic optional header `<name-without-lib_>_conf.h` for app-side
-configuration overrides, without needing to list it in `LIB_OPTIONAL_HEADERS`.
-
-### Static libraries (prebuilt archive + optional source)
-
-A static-library repo (also `lib_*` by convention) provides its own `lib_build_info.cmake` using
-`LIB_ARCHIVE_*`-prefixed variables (`LIB_ARCHIVE_C_SRCS`, `LIB_ARCHIVE_COMPILER_FLAGS`,
-`LIB_ARCHIVE_DEPENDENT_MODULES`, `LIB_ARCHIVE_ARCHS` — default `xs3a`) and calls
-`XMOS_REGISTER_STATIC_LIB()`. If the repo also ships source to rebuild the archive itself, it adds
-a `CMakeLists.txt` with the same 3-line header plus `XMOS_SANDBOX_DIR` and
-`include(lib_build_info.cmake)`, so the same variables serve both "rebuild the archive" and "link
-the archive into an app" workflows.
-
-### Dependency version format
-
-Values in `APP_DEPENDENT_MODULES`/`LIB_DEPENDENT_MODULES` are always quoted strings (they contain
-parentheses). The common external form is a name plus a released version:
-
-```cmake
-set(APP_DEPENDENT_MODULES "lib_i2c(6.1.1)")   # clones github.com/xmos/lib_i2c, checks out tag v6.1.1
-```
-
-Internal-development variants let you override location and/or version independently:
-`lib_abc` (default location, default branch head), `myuser/lib_abc` (different GitHub org/user),
-`othergitserver.com:myuser/lib_abc` (SSH to another server), `https://othergitserver.com/myuser/lib_abc`
-(plain HTTPS), each optionally combined with a version suffix — `(v1.2.3)` (tag), `(develop)`
-(branch head), or `(4fa35fe)` (commit hash). Dependencies are cloned once into the sandbox root and
-never modified automatically after that; to move a dependency to a different version, `git checkout`
-it manually inside the sandbox and re-run `cmake`. If `cmake` reports a version mismatch for an
-already-cloned dependency, run `git -C <sandbox>/<lib_name> fetch && git -C <sandbox>/<lib_name>
-checkout <tag>` then re-run `cmake`.
+See the XCommon CMake documentation for the module, archive and architecture variables.
 
 ### Sandbox manifest
 
@@ -266,9 +200,6 @@ For a quick one-off program with no library dependencies, you can skip CMake ent
 ```sh
 xcc -target=<platform.xn> file1.c file2.xc -o a.xe
 ```
-
-This does not scale to multi-file/multi-library applications — use XCommon CMake for anything
-beyond a quick example.
 
 ## Key `xcc` flags worth knowing
 
