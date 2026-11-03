@@ -138,7 +138,8 @@ the selected tests need a host runner, the simulator, hardware or additional fix
 Use the documented environment and dependency versions. Run Python tooling in a virtual
 environment, activate XTC Tools when required, and select the smallest documented test target
 that verifies the change. See [`xmos-build-system`](../xmos-build-system/SKILL.md) and
-[`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md) for target applications.
+[`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md) for target applications, and
+[`xmos-testing`](../xmos-testing/SKILL.md) for writing tests.
 
 ## Where things live
 
