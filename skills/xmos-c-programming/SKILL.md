@@ -23,9 +23,10 @@ For DSP/numeric code, investigate compatible `lib_xcore_math` operations before
 writing equivalent implementations; see
 [`xmos-numeric-programming`](../xmos-numeric-programming/SKILL.md).
 
-Everything below applies **within a single tile**. To place entry-points on more than one tile or
-pass a chanend between tiles, see
+Everything below applies **within a single tile**. For multi-tile applications, including the
+required XC `main()` placement layer, see
 [`xmos-multi-tile-architecture`](../xmos-multi-tile-architecture/SKILL.md).
+
 ## Parallel tasks: `xcore/parallel.h`
 
 ```c
