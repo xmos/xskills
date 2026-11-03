@@ -31,6 +31,7 @@ Skills
 * `xmos-internal-repo-checks <skills/xmos-internal-repo-checks/SKILL.md>`_: Diagnose and fix repository checks using XMOS internal scripts.
 * `xmos-library-repo-style <skills/xmos-library-repo-style/SKILL.md>`_: Follow XMOS library repository conventions.
 * `xmos-multi-tile-architecture <skills/xmos-multi-tile-architecture/SKILL.md>`_: Structure applications across multiple tiles.
+* `xmos-numeric-programming <skills/xmos-numeric-programming/SKILL.md>`_: Choose numeric representations and math libraries for DSP code.
 * `xmos-project-structure <skills/xmos-project-structure/SKILL.md>`_: Organize XMOS projects, sandboxes, and tooling.
 * `xmos-run-and-simulate <skills/xmos-run-and-simulate/SKILL.md>`_: Run applications using ``xrun`` or ``xsim``.
 * `xmos-skill-authoring <skills/xmos-skill-authoring/SKILL.md>`_: Create and maintain skills in this repository.

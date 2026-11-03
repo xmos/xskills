@@ -248,7 +248,8 @@ of static data on a tile) has compiler implications too — see the `-mcmodel` m
   (dedicated decimate-in-time/frequency instructions), with built-in saturation and rounding on
   every arithmetic op. This is the hardware DSP/ML acceleration referenced by "AI algorithms" in the
   architecture's stated purpose — relevant when a task involves audio/ML kernels that might benefit
-  from vectorised C libraries rather than hand-written scalar loops.
+  from vectorised C libraries rather than hand-written scalar loops (see
+  [`xmos-numeric-programming`](../xmos-numeric-programming/SKILL.md)).
   - Confirmed against `lib_xcore_math` v2.4.0 (the library that directly wraps this unit):
     `XS3_VPU_VREG_WIDTH_BITS` is literally defined as `256` in its `xmath/xs3/vpu_info.h`, with
     per-vector element counts `VPU_INT8_EPV=32`, `VPU_INT16_EPV=16` (and `VPU_INT32_EPV=8`) matching

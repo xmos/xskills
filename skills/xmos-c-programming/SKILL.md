@@ -20,8 +20,9 @@ All of the APIs below are declared in headers under `xcore/` (installed at
 in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md) (threads, channels, ports, timers).
 
 For DSP/numeric code, investigate compatible `lib_xcore_math` operations before
-writing equivalent implementations; verify the selected release's APIs and numeric contracts. See
-[`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md) for specifics.
+writing equivalent implementations; see
+[`xmos-numeric-programming`](../xmos-numeric-programming/SKILL.md).
+
 Everything below applies **within a single tile**. To place entry-points on more than one tile or
 pass a chanend between tiles, see
 [`xmos-multi-tile-architecture`](../xmos-multi-tile-architecture/SKILL.md).
