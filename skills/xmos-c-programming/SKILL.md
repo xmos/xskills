@@ -5,6 +5,11 @@ description: Use when writing or reviewing multicore C code for XMOS/XCORE using
 
 # XMOS C programming (lib_xcore)
 
+**Terminology:** XMOS uses **logical core** to mean a **hardware thread**. This guidance
+generally uses "thread" for that hardware execution context. A task or job is software
+that executes on a thread, not the hardware resource itself; other execution models
+may schedule multiple software tasks on a thread.
+
 XMOS is moving away from the XC language. **Write new code in C using `lib_xcore`**, not XC, unless
 a task specifically requires an XC-only language feature (e.g. certain legacy interfaces). If XC is
 required, keep it isolated and prefer C for everything else.
@@ -12,14 +17,16 @@ required, keep it isolated and prefer C for everything else.
 All of the APIs below are declared in headers under `xcore/` (installed at
 `<XMOS_TOOL_PATH>/target/include/xcore/` — see
 [`xmos-toolchain-paths`](../xmos-toolchain-paths/SKILL.md)), and rely on the XS3 concepts described
-in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md) (logical cores, channels, ports, timers).
+in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md) (threads, channels, ports, timers).
 
-For DSP/numeric code (fixed-point arithmetic, saturating 64-to-32-bit division, trig/exp/sqrt, or
-vectorized math targeting XS3's VPU) prefer `lib_xcore_math` over hand-rolled implementations — see
-[`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md) for specifics.
-Everything below applies **within a single tile**. To place entry-points on more than one tile or
-pass a chanend between tiles, see
+For DSP/numeric code, investigate compatible `lib_xcore_math` operations before
+writing equivalent implementations; see
+[`xmos-numeric-programming`](../xmos-numeric-programming/SKILL.md).
+
+Everything below applies **within a single tile**. For multi-tile applications, including the
+required XC `main()` placement layer, see
 [`xmos-multi-tile-architecture`](../xmos-multi-tile-architecture/SKILL.md).
+
 ## Parallel tasks: `xcore/parallel.h`
 
 ```c
@@ -38,25 +45,48 @@ void run(void) {
 }
 ```
 
-- Each `PJOB` runs on its own logical core of the **current tile**.
-- The number of jobs is hard-limited by the number of free logical cores on that tile; if there
+- Each `PJOB` runs on its own thread of the **current tile**.
+- The number of jobs is hard-limited by the number of available threads on that tile; if there
   aren't enough, this is a **runtime trap**, not a compile error — don't over-subscribe a tile.
-- Jobs return `void`; communicate results back via channels, not return values.
+- Jobs return `void`; communicate through channels or pass disjoint output storage
+  whose lifetime extends until the jobs join, then read the results after `PAR_JOBS` returns.
 
 ## Channels: `xcore/channel.h`
 
 ```c
 #include <xcore/channel.h>
+#include <xcore/parallel.h>
+#include <stdint.h>
 
-channel_t c = chan_alloc();
-// c.end_a, c.end_b: give one end to each of two logical cores (e.g. via PJOB arguments)
-chan_out_word(c.end_a, 42);
-int v = chan_in_word(c.end_b);
-chan_free(c);
+DECLARE_JOB(sender, (chanend_t));
+DECLARE_JOB(receiver, (chanend_t, uint32_t *));
+
+void sender(chanend_t c) {
+    chan_out_word(c, 42);
+}
+
+void receiver(chanend_t c, uint32_t *result) {
+    *result = chan_in_word(c);
+}
+
+int main(void) {
+    channel_t c = chan_alloc();
+    if (c.end_a == 0) {
+        return 1;   // allocation failed; both endpoints are zero
+    }
+    uint32_t result = 0;
+    PAR_JOBS(
+        PJOB(sender, (c.end_a)),
+        PJOB(receiver, (c.end_b, &result))
+    );
+    chan_free(c);   // both jobs have returned
+    return result == 42 ? 0 : 1;
+}
 ```
 
 - Standard channels are **blocking/handshaking**: both ends must transact for a transfer to
-  complete.
+  complete. Run the sender and receiver concurrently; a send followed by a receive
+  on the same thread can deadlock before reaching the receive.
 - `xcore/channel_streaming.h` provides `s_chan_*` equivalents with no handshake, for higher
   throughput. Free streaming channels as soon as possible — they hold switch routing capacity open,
   which can starve other traffic if left allocated.
@@ -82,7 +112,11 @@ port_disable(p);
 ```c
 #include <xcore/hwtimer.h>
 
-hwtimer_t t = hwtimer_alloc();     // may return 0 on failure - check it
+// Within a function returning an error code:
+hwtimer_t t = hwtimer_alloc();
+if (t == 0) {
+    return 1;
+}
 hwtimer_delay(t, 1000);            // delay in reference-clock ticks
 uint32_t now = hwtimer_get_time(t);
 hwtimer_free(t);
@@ -110,18 +144,31 @@ on_port:
 }
 ```
 
-`select` lets one logical core wait on channels, ports, and timers simultaneously and react to
-whichever becomes ready first — this is the idiomatic alternative to polling on XS3. Use
+`select` lets one thread wait on channels, ports, and timers simultaneously and react to
+a ready event — this is the idiomatic alternative to polling on XS3. Use
 `CASE_GUARD_THEN` to make a case conditional on a runtime guard expression.
+
+This example shows dispatch structure only. Each handler must perform the appropriate
+resource operation: consume channel input, or read the port and update its trigger
+condition as required. Selecting an event does not perform those operations automatically.
+
+If multiple events are ready, `SELECT_RES` does not guarantee which is selected
+(`SELECT_RES_ORDERED` provides priority ordering at extra cost). Keep handlers bounded;
+blocking or lengthy work delays other events serviced by the same thread. See the
+[lib_xcore select documentation](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/libraries/lib-xcore-api/lib-xcore-api.html#c.SELECT_RES)
+for complete examples and ordering options.
 
 ## Stack size is statically calculated — implications for how you write C
 
-The compiler calculates each logical core's stack size statically at build time (visible via
-`xcc -report`, per [`xmos-build-system`](../xmos-build-system/SKILL.md)). This is only possible
-when the call graph is fully known at compile time, which is why:
+The tools calculate stack requirements at build time where stack frames and callee
+requirements are calculable (visible via `xcc -report`, per
+[`xmos-build-system`](../xmos-build-system/SKILL.md)). See the
+[XTC C guide's stack guidance](https://www.xmos.com/documentation/XM-014363-PC/html/prog-guide/quick-start/c-programming-guide/index.html)
+for the analysis and manual-bound mechanisms.
 
-- **No dynamic allocation** (`malloc`/`free`) — see
-  [`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md).
+- **Keep stack frames bounded and analysable.** Variable-length arrays and other
+  runtime-sized frames can prevent automatic bounds. Heap policy is a separate issue;
+  see [`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md).
 - **No unbounded/indirect recursion** — the compiler cannot bound stack usage for it.
 - **Function pointers must be annotated** if used for indirect calls: mark both the pointer type and
   every candidate target function with `__attribute__((fptrgroup("name")))` so the compiler can

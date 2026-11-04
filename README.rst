@@ -31,9 +31,11 @@ Skills
 * `xmos-internal-repo-checks <skills/xmos-internal-repo-checks/SKILL.md>`_: Diagnose and fix repository checks using XMOS internal scripts.
 * `xmos-library-repo-style <skills/xmos-library-repo-style/SKILL.md>`_: Follow XMOS library repository conventions.
 * `xmos-multi-tile-architecture <skills/xmos-multi-tile-architecture/SKILL.md>`_: Structure applications across multiple tiles.
+* `xmos-numeric-programming <skills/xmos-numeric-programming/SKILL.md>`_: Choose numeric representations and math libraries for DSP code.
 * `xmos-project-structure <skills/xmos-project-structure/SKILL.md>`_: Organize XMOS projects, sandboxes, and tooling.
 * `xmos-run-and-simulate <skills/xmos-run-and-simulate/SKILL.md>`_: Run applications using ``xrun`` or ``xsim``.
 * `xmos-skill-authoring <skills/xmos-skill-authoring/SKILL.md>`_: Create and maintain skills in this repository.
+* `xmos-testing <skills/xmos-testing/SKILL.md>`_: Write tests with lib_unity and test_support.
 * `xmos-toolchain-paths <skills/xmos-toolchain-paths/SKILL.md>`_: Locate toolchain headers, libraries, and targets.
 * `xmos-vscode-extension <skills/xmos-vscode-extension/SKILL.md>`_: Configure XMOS development in VS Code.
 * `xmos-xs3-architecture <skills/xmos-xs3-architecture/SKILL.md>`_: Understand XS3 hardware and execution resources.
@@ -56,6 +58,13 @@ location, such as ``~/xskills`` or ``C:\Users\<user>\xskills``:
 Adjust the example paths below to match your checkout. Install whole skill
 directories, including their scripts and resources, rather than just copying
 ``SKILL.md`` files.
+
+Skills link to related skills and to repository files such as ``README.rst``
+and ``AGENTS.md`` using paths relative to this checkout. Copying an individual
+skill does not copy those targets. If a linked file or skill is missing, find
+the related skill by its installed name, or read it from an accessible xskills
+checkout or the same release on GitHub, rather than a different version.
+Linking the whole ``skills/`` directory keeps these references working.
 
 Skills and core instructions
 ----------------------------

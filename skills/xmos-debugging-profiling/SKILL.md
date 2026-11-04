@@ -12,7 +12,8 @@ not work well.
 
 ## `xgdb`: source-level, multi-tile debugging
 
-`xgdb` extends GDB with awareness of multiple XCORE tiles/logical cores. `xrun` is actually a
+`xgdb` extends GDB with awareness of multiple XCORE tiles and hardware threads (also
+called logical cores). `xrun` is actually a
 wrapper around `xgdb` for common cases; use `xgdb` directly for interactive/advanced debugging.
 
 Typical interactive session:
@@ -51,14 +52,12 @@ To debug in the simulator instead of on hardware, run `connect -s` instead of `c
 Tip: `(gdb) start` is shorthand for `load` + `break main` + `continue` in a single command, for the
 common case of wanting to stop at the very beginning of `main`.
 
-**`quit` on a still-running/attached target prompts for confirmation and exits non-zero.** If the
-target program is still executing when `quit` runs (e.g. right after a breakpoint like `break
-main` + `continue` stops it, as opposed to running to program exit), `xgdb` prints `A debugging
-session is active. ... Quit anyway? (y or n)`; in `--batch` mode this is auto-answered `y`
-(inferiors are killed), but the process still exits with code **1**, not 0. Don't treat that exit
-code as a script/build failure — check the printed output for the expected breakpoint-hit message
-instead of relying on the exit code when scripting a `--batch` session that quits out of a live
-target.
+Use `--batch` for scripted debugging; it terminates on a script error or once all commands have
+run, returning an error code if it terminates unexpectedly. Check both the exit status and the
+expected stop condition (for example the breakpoint-hit message). With `--return-child-result`,
+XGDB returns the target program's exit code, or 1 if the script ends before the program completes;
+that 1 need not mean the debugging task failed. See
+[Using XGDB in scripts](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/cmd-line-tools/xgdb-manual/xgdb-manual.html#using-xgdb-in-scripts).
 
 ## Interpreting a runtime exception from `xrun`/`xgdb`
 
@@ -77,16 +76,9 @@ failed `assert(...)`, but also `lib_xassert`'s `fail(...)` and `unreachable(...)
 running `lib_xassert`'s `app_assert`/`app_fail`/`app_unreachable` examples on real hardware — all
 three raise `ET_ECALL` identically).
 
-**Concrete example encountered in practice**: the exception above is
-`assert(regVal == 1 && msg("CODEC reg read problem"))` failing inside board-init code — an I2C
-read from the board's audio CODEC didn't return the expected value. The root cause turned out to
-be a **board/target mismatch**: the `.xe` was built for `XK-EVK-XU316`, but a *different* board (an
-XMOS L71) was actually connected. The wrong board doesn't have the expected CODEC at that I2C
-address, so board-init's sanity check correctly failed fast rather than continuing with hardware
-that doesn't match what the code expects. When board-init/hardware-setup code raises an exception
-like this, check that the connected physical board actually matches `APP_HW_TARGET`/the `.xn` file
-the `.xe` was built with (see [`xmos-build-system`](../xmos-build-system/SKILL.md)) before assuming
-a wiring fault or a software bug.
+If the exception occurs in board or hardware-initialisation code, check that the connected board
+matches the `APP_HW_TARGET`/`.xn` file the `.xe` was built for (see
+[`xmos-build-system`](../xmos-build-system/SKILL.md)) before assuming a wiring fault or software bug.
 
 Read the reported file/line and any `msg(...)` text first; it's usually specific enough to identify
 the faulty component/assumption without further stepping. To inspect state at the point of the
@@ -95,7 +87,7 @@ exception interactively instead of just reading the one-line report, run the sam
 
 ## Profiling with `xgprof`
 
-Profiling captures *sampled* execution data per tile/logical core via `xgdb`, separate from
+Profiling captures *sampled* execution data per tile/thread via `xgdb`, separate from
 `xsim --gprof` (the simulator's own function/statement/address-level profiling of a `.xe` run in
 `xsim`, mentioned below). The `xgprof` workflow below targets real hardware via `xgdb`.
 
@@ -108,8 +100,8 @@ xgdb -ex "connect --gprof" -ex load -ex continue CircularBuffer.xe
 ```
 
 Leave `xgdb` running for the period you want to profile, then interrupt with <kbd>Ctrl-C</kbd> and
-exit with `quit`. On exit, one `.gprof` file per tile/logical core is written to the current
-working directory (the filename encodes which tile and logical core it covers, e.g.
+exit with `quit`. On exit, one `.gprof` file per tile/thread is written to the current
+working directory (the filename encodes which tile and thread it covers, e.g.
 `tile[0]_core0.gprof`).
 
 To profile a program that is already running, having booted from flash, attach instead of loading:
@@ -127,23 +119,26 @@ way as above.
 xobjdump -s CircularBuffer.xe
 ```
 
-This produces one ELF file per tile per boot stage, e.g. `image_n0c0_2.elf` for tile 0,
-`image_n0c1_2.elf` for tile 1, and so on. **Use only the `_2`-suffixed images** — the others are
-bootstrap images used for system initialization and are not what you want to analyse.
+This extracts each tile's ELF sectors. Repeated sectors for the same tile get an incrementing
+suffix: `image_n0c0.elf`, then `image_n0c0_2.elf`, and so on. The
+[XTC profiling tutorial](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tutorials/working-with-targets/intro.html)
+analyses the `_2` images (the application) and ignores the others (boot stages); confirm which
+image holds your application if the extracted set differs.
 
 ### 3. Generate a report with `xgprof`
 
-Pair each tile's ELF file with the matching `.gprof` file from step 1. Useful report levels:
+Pair each tile's ELF file with the matching `.gprof` file from step 1. Quote `.gprof` names: the
+brackets are shell glob characters. Useful report levels:
 
 ```sh
 # Flat summary report
-xgprof -b image_n0c0_2.elf tile[0]_core0.gprof
+xgprof -b image_n0c0_2.elf "tile[0]_core0.gprof"
 
 # Source-line-level detail
-xgprof -l -b image_n0c0_2.elf tile[0]_core0.gprof
+xgprof -l -b image_n0c0_2.elf "tile[0]_core0.gprof"
 
 # Address-level detail with hit counts
-xgprof -C -l -b image_n0c0_2.elf tile[0]_core0.gprof
+xgprof -C -l -b image_n0c0_2.elf "tile[0]_core0.gprof"
 ```
 
 Start with the flat summary, then drill into `-l`/`-C -l` for the tiles/functions that matter.
@@ -163,38 +158,59 @@ up `xgprof` — read a hardware timer (`xcore/hwtimer.h`, see
 
 ```c
 #include <xcore/hwtimer.h>
+#include <stdint.h>
 
+// Within a function returning an error code:
 hwtimer_t tmr = hwtimer_alloc();
+if (tmr == 0) {
+    return 1;
+}
 
-volatile uint32_t t0 = hwtimer_get_time(tmr);
+uint32_t t0 = hwtimer_get_time(tmr);
 // ... code being measured ...
-volatile uint32_t t1 = hwtimer_get_time(tmr);
+uint32_t t1 = hwtimer_get_time(tmr);
 
-uint32_t elapsed = t1 - t0;   // ticks of the 100 MHz reference clock: elapsed/100 = microseconds
+uint32_t elapsed = t1 - t0;   // reference-clock ticks; convert using the actual frequency
+hwtimer_free(tmr);
+// Consume/report elapsed and the measured result outside the timed interval.
 ```
 
-- Declare `t0`/`t1` (or the variables they're assigned from) `volatile` so the compiler cannot
-  reorder the two timer reads around the measured code or optimize either read away.
+- Declaring `t0` and `t1` volatile would preserve their stores and the order of those
+  volatile accesses, but would not guarantee that unrelated non-volatile computation
+  stays between the timer reads. The XTC 15.3.1 implementation of `hwtimer_get_time()`
+  already uses volatile assembly for the reads; see
+  `<XMOS_TOOL_PATH>/target/include/xcore/_support/xcore_hwtimer_impl.h`.
+  Keep measured results observable and inspect optimised generated code when precise
+  measurement boundaries matter. Use documented compiler-ordering mechanisms where
+  needed rather than treating volatile timestamp storage as a general compiler barrier.
 - The timer ticks at the 100 MHz reference clock (see
   [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)): divide `elapsed` by 100 for microseconds, or
   multiply by 10 for nanoseconds. **100 MHz is only the default** — if the project's XN file or PLL
   configuration changes the reference clock frequency, use the actual configured value instead; see
   [`xmos-clock-domains`](../xmos-clock-domains/SKILL.md).
-- The subtraction `t1 - t0` is correct even across the timer's 32-bit wraparound, since unsigned
-  wraparound arithmetic gives the right difference.
+- Unsigned subtraction handles a wrap provided the interval is shorter than one full
+  32-bit timer period. It cannot count multiple wraps; at 100 MHz the full period is
+  approximately 42.95 seconds. The reference frequency must also remain constant for
+  a single fixed-frequency conversion to apply.
 - Free the timer (`hwtimer_free(tmr)`) once done, like any other resource — see
   [`xmos-c-programming`](../xmos-c-programming/SKILL.md).
-- This measures wall-clock ticks on the current logical core; if other threads on the same tile are
-  runnable, actual elapsed *thread* cycles can include their interleaved execution too — see the
-  thread-scheduler notes in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md). For statistically
+- This measures elapsed reference-clock ticks, not just instruction issue opportunities
+  for the current hardware thread. Other runnable threads share
+  the tile's execution unit, so their interleaved execution contributes to elapsed time;
+  see the scheduler notes in [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md). For statistically
   robust or multi-function profiling, prefer `xgprof`/`xsim --gprof` above instead of hand-rolled
   timing.
 
 ## xSCOPE: fast host communication and data probes
 
-xSCOPE is the recommended mechanism for both "printf-style" debugging output and structured data
-logging, because it does not pause the application the way JTAG-based I/O does (see
-[`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md) on `xrun --io` vs `xrun --xscope`).
+xSCOPE can carry text writes and structured probes without JTAG's tile-wide debug
+halts. It still has instrumentation and bandwidth costs; lossless mode can stall the
+transmitting core and lossy mode can drop packets. See the
+[XTC fast-printf guide](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/quick-start/fast-printf.html)
+and [xSCOPE reference/FAQ](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/xscope/index.html)
+for the selected toolchain's setup and transport limits.
+
+### Configure xSCOPE text I/O
 
 1. Create an xSCOPE config file (conventionally `<name>.xscope`), e.g.:
 
@@ -202,12 +218,17 @@ logging, because it does not pause the application the way JTAG-based I/O does (
    <xSCOPEconfig ioMode="basic" enabled="true"></xSCOPEconfig>
    ```
 
-   Use `ioMode="timed"` instead of `"basic"` to add timestamps to output (at the cost of some
-   additional buffering).
+   Use `ioMode="timed"` instead of `"basic"` to add timestamps to output, reducing
+   the amount of data that can be buffered.
 
 2. Pass this config file to `xcc` as an input at **both compile and link** time (alongside your
-   source files), or use `xcc -fxscope[=link]` to enable basic xSCOPE support without a separate
-   config file.
+   source files).
+
+   `xcc -fxscope` is not a substitute for this when you want text output over xSCOPE: per the
+   [xcc manual](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/cmd-line-tools/xcc-manual/xcc-manual.html#cmdoption-xcc-fxscope)
+   it is equivalent to a config with `ioMode="none"`, enabling xSCOPE and its target library
+   (e.g. probes registered at runtime) without redirecting `printf`. Both require an xSCOPE link in
+   the target's XN file.
 
 3. Run with xSCOPE enabled:
 
@@ -215,14 +236,11 @@ logging, because it does not pause the application the way JTAG-based I/O does (
    xrun --xscope a.xe
    ```
 
-**Plain `printf`/`debug_printf` text output doesn't require any of the above.** The steps above
-(an `.xscope` config file or `-fxscope`) are only needed for structured **data probes** (below,
-`xscope_int(...)` etc.) — ordinary text output (e.g. `lib_logging`'s `debug_printf`, or plain
-`printf`) goes over `_write(FD_STDOUT, ...)` and is captured correctly by `xrun --xscope a.xe` (or
-`xrun --io a.xe`) even when the `.xe` was built with no `.xscope` file and no `-fxscope` flag at
-all — confirmed with `lib_logging`'s `app_debug_printf` example, which has neither and prints
-correctly under both `--io` and `--xscope`. Reach for a compile-time `.xscope` config/`-fxscope`
-only once you need probes/VCD data logging, not just to get basic text output working.
+Seeing ordinary stdout under a host command does not prove the application was built
+to send it over xSCOPE. Verify the build inputs and required board xLINK wiring;
+do not infer the transport or its timing properties merely from printed text.
+The documented xSCOPE `ioMode` accelerates **write** syscalls; other calls such as
+`read` still use JTAG. See the FAQ before relying on file I/O semantics.
 
 ### Data probes
 
@@ -248,7 +266,7 @@ xrun --xscope --xscope-file xscope.vcd a.xe
 |---|---|
 | Step through code, inspect variables, set breakpoints | `xgdb` (or `xrun`/VS Code Debug for common cases) |
 | Understand behavior across multiple tiles/cores simultaneously | `xgdb` `info inferiors` / `tile <n>` |
-| Fast text/log output without disturbing real-time behavior | xSCOPE (`xrun --xscope`) |
+| Lower-impact text/log output, with bandwidth and overhead checked | Configured xSCOPE I/O (`xrun --xscope`) |
 | Structured/waveform data logging | xSCOPE probes → VCD → GTKWave |
 | Function/statement-level performance profiling on hardware | `xgdb -ex "connect --gprof" ...` → `xobjdump -s` → `xgprof` |
 | Function/statement/address-level performance profiling in the simulator | `xsim a.xe --gprof` |

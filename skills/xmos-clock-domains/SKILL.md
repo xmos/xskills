@@ -37,6 +37,19 @@ evidence is unavailable, explain the gap; do not invent numerical limits or regi
 If references disagree, identify the discrepancy and verify which applies to the selected
 device and toolchain before recommending a setting; do not silently merge conflicting recipes.
 
+### Known documentation errors (confirmed by XMOS, corrections pending)
+
+Remove this section once corrected documents are published.
+
+- **PLL enable polarity.** The System PLL and Application PLL use opposite polarities: the
+  System PLL's `PLLENABLE` is a disable bit (0 = enabled, 1 = disabled), while the Application
+  PLL's `APP_PLL_ENABLE` is an enable bit (1 = enabled, 0 = disabled), as the device datasheet
+  describes. AN02022 (XM-014200-AN v1.1.0) says to clear the Application PLL enable bit; that is
+  wrong.
+- **`SecondaryFrequency`.** The XN attribute is supported from XTC Tools 15.1.4, contrary to the
+  XTC 15.3 XN specification's statement that the Secondary PLL can only be configured manually.
+  Using the Secondary PLL for LPDDR is supported from XTC Tools 15.2.1.
+
 ## Keep the clock domains distinct
 
 - Distinguish System/Core PLL, tile execution clocks, xCONNECT switch clock and reference
