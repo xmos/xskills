@@ -13,12 +13,10 @@ vendoring dependencies inside a single repo. XCommon CMake (see
 [`xmos-build-system`](../xmos-build-system/SKILL.md)) is aware of this convention through
 `XMOS_SANDBOX_DIR` and resolves sibling library repos from it.
 
-This repository (`xskills`) is **not** part of that sandbox. It's a standalone guidance repo,
-distributed independently of any application sandbox — checked out once in the user's home
-directory (e.g. `~/xskills` or `C:\Users\<user>\xskills`) and pointed at from the coding tool's
-config, or synced automatically via OpenCode's remote-config plugin. See the root
-[`README.rst`](../../README.rst) for setup details. Do not assume `xskills` lives alongside an
-application's own dependencies.
+`xskills` is distributed independently of application dependencies. Guidance may be
+installed in the coding tool, accessed from a local checkout or retrieved from an
+official release. Do not assume a fixed checkout path or require it to live inside
+or outside the sandbox. See [`README.rst`](../../README.rst) for tool-specific setup.
 
 A real application sandbox typically looks like:
 
@@ -50,14 +48,22 @@ All of these sit as siblings directly at the sandbox root — **no nesting** of 
 another — which is what lets independent applications share the same checked-out copy of a
 dependency and avoids dependency-loop issues.
 
-## Finding agent guidance from inside an app repo
+## Finding repository and central agent guidance
 
-Because `xskills` is checked out once in the user's home directory (or loaded natively via
-OpenCode's remote-config plugin) rather than vendored into every app repo or sandbox, an app repo
-only needs a small pointer `AGENTS.md` at its root — a short file that tells an agent to look for
-`~/xskills/AGENTS.md` first, and otherwise fall back to fetching/cloning the canonical `xskills`
-repository. If you're navigating a sandbox and an app repo's `AGENTS.md` is just such a pointer,
-follow it to `~/xskills` rather than assuming the app repo has no agent guidance.
+Read the application or library repository's `AGENTS.md` and other applicable project
+instructions. Follow references to central XMOS guidance through an accessible installed
+copy, checkout or official release; a link alone does not install or load skills.
+Use the referenced release or version rather than assuming a particular branch or path.
+If central guidance cannot be accessed, state that limitation and continue using the
+project's documentation.
+
+Library guidance may have a shared prefix followed by `## Repository-Specific Guidance`.
+Read both, preserving the common instructions and any custom content. Repository-specific
+hardware, compatibility and legacy requirements take precedence over general recommendations.
+Do not infer that an older repository needs migration simply because its layout or
+implementation differs from current guidance. See
+[`xmos-library-repo-style`](../xmos-library-repo-style/SKILL.md) for maintaining library
+instructions.
 
 ## Always use a Python virtual environment
 

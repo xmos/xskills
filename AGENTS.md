@@ -51,6 +51,7 @@ and verification requirements also apply to maintenance work.
 - Check the project's README, documentation, examples and build configuration for supported
   architectures, devices and toolchain versions before applying a recommendation.
 - Look for existing XMOS libraries and examples before implementing equivalent functionality.
+  Use [capability discovery](./skills/xmos-capability-discovery/SKILL.md) to find and verify candidates.
   Prefer supported implementations for new development; only recommend a successor when confirmed.
 - Repository-specific hardware, compatibility and legacy requirements take precedence over general
   recommendations here. Do not assume internal XMOS repositories or tools are accessible.
@@ -83,6 +84,7 @@ and installation.
 
 | Skill | Use when... |
 |---|---|
+| [`xmos-capability-discovery`](./skills/xmos-capability-discovery/SKILL.md) | Finding existing XMOS libraries, reference applications and examples; verifying capability, version and device compatibility through accessible official sources. |
 | [`xmos-environment-setup`](./skills/xmos-environment-setup/SKILL.md) | Read before running any XTC Tools command or XCommon CMake build: activating the environment (one-command `scripts/xtc.ps1` wrapper for PowerShell), or diagnosing "command not found" for `xcc`/`xrun`/`xsim`. |
 | [`xmos-toolchain-paths`](./skills/xmos-toolchain-paths/SKILL.md) | Locating XMOS headers, libraries, or the CMake build system on disk; resolving `#include` errors for `xcore/*.h`, `xs1.h`, `platform.h`. |
 | [`xmos-build-system`](./skills/xmos-build-system/SKILL.md) | Building an XMOS application from the command line, with XCommon CMake or with `xcc` directly. |

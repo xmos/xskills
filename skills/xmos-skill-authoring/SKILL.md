@@ -34,11 +34,16 @@ relevant — `AGENTS.md` is always loaded, so it must stay concise.
    [`xmos-environment-setup`](../xmos-environment-setup/SKILL.md) and the `xgprof` caveat in
    [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md) as examples of this pattern).
 4. Cross-link related skills rather than duplicating their content.
-5. Don't copy content that already exists in XMOS's own documentation (XTC Tools docs, application
-   notes, architecture manuals). Link to it instead and summarize only what's needed to decide
-   whether to follow the link — this keeps the skill from going stale when the docs change.
-6. If the skill needs large reference material (big tables, exhaustive option lists), put it in a
-   `references/` subfolder next to `SKILL.md` and link to it, keeping the main file scannable.
+5. Reference authoritative documentation rather than reproducing it, including device datasheets,
+   applicable errata, XTC Tools documentation, application notes and architecture manuals. Explain
+   when to consult each source, which sections matter and how to apply them. Keep only the
+   conceptual context needed to guide that investigation. Do not duplicate register tables,
+   operating limits, formulas or programming sequences maintained in those sources: copied details
+   can become stale. Identify the relevant device, document revision or toolchain version where
+   applicability matters, and state when the source cannot be accessed or verified.
+6. Use a `references/` subfolder for skill-specific supporting material that would make `SKILL.md`
+   unwieldy, and link to it from the skill. Do not use it to store copies or rewritten versions of
+   existing documentation; moving duplicated information out of `SKILL.md` does not prevent drift.
 7. Add a row to the skills index table in [`AGENTS.md`](../../AGENTS.md).
 
 ## Updating an existing skill
