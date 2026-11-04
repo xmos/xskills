@@ -22,7 +22,10 @@ and stack analysis are separate concerns. If a dependency cannot meet the policy
 identify that incompatibility rather than silently making an exception. A dedicated
 thread does not isolate heap or memory-corruption consequences: threads on a tile
 share memory. Any explicitly requested exception needs tile-wide memory, timing and
-concurrency analysis. Prefer a fixed maximum size where possible.
+concurrency analysis. Prefer a fixed maximum size where possible. A
+particular issue with dynamic memory allocation is fragmentation of the
+heap, which is non-deterministic in the context of multiple hardware
+threads allocating from a single pool.
 
 ## Bounded stacks: avoid unbounded/indirect recursion
 
