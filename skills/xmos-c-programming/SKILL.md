@@ -50,6 +50,12 @@ void run(void) {
   aren't enough, this is a **runtime trap**, not a compile error — don't over-subscribe a tile.
 - Jobs return `void`; communicate through channels or pass disjoint output storage
   whose lifetime extends until the jobs join, then read the results after `PAR_JOBS` returns.
+- The threads in a `PAR_JOBS` are implicitly created with a **synchroniser** that implements
+  barrier synchronisation. If the algorithm requires the threads to
+  go through a barrier, for example in a loop, then an extra parameter
+  `PAR_SYNC` must be passed to each thread. It is of type `synchronizer_t`
+  and the barrier is passed by each thread calling
+  `par_jobs_synchronize(...)` on the synchroniser.
 
 ## Channels: `xcore/channel.h`
 
@@ -88,7 +94,8 @@ int main(void) {
   complete. Run the sender and receiver concurrently; a send followed by a receive
   on the same thread can deadlock before reaching the receive.
 - `xcore/channel_streaming.h` provides `s_chan_*` equivalents with no handshake, for higher
-  throughput. Free streaming channels as soon as possible — they hold switch routing capacity open,
+  throughput and less synchronisation.
+  Free streaming channels as soon as possible — they hold switch routing capacity open,
   which can starve other traffic if left allocated.
 
 ## Ports: `xcore/port.h`
