@@ -26,6 +26,7 @@ Skills
 * `xmos-clock-domains <skills/xmos-clock-domains/SKILL.md>`_: Configure and reason about xcore.ai clocks.
 * `xmos-debugging-profiling <skills/xmos-debugging-profiling/SKILL.md>`_: Debug and profile with xgdb, xSCOPE, and xgprof.
 * `xmos-embedded-c-practices <skills/xmos-embedded-c-practices/SKILL.md>`_: Apply safe, efficient embedded C practices.
+* `xmos-real-time-programming <skills/xmos-real-time-programming/SKILL.md>`_: Wall-time, IO-time, program time and how to keep them separate.
 * `xmos-environment-setup <skills/xmos-environment-setup/SKILL.md>`_: Activate and troubleshoot XTC Tools environments.
 * `xmos-flashing <skills/xmos-flashing/SKILL.md>`_: Program persistent images with ``xflash``.
 * `xmos-internal-repo-checks <skills/xmos-internal-repo-checks/SKILL.md>`_: Diagnose and fix repository checks using XMOS internal scripts.
