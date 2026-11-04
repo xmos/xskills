@@ -13,12 +13,10 @@ vendoring dependencies inside a single repo. XCommon CMake (see
 [`xmos-build-system`](../xmos-build-system/SKILL.md)) is aware of this convention through
 `XMOS_SANDBOX_DIR` and resolves sibling library repos from it.
 
-This repository (`xskills`) is **not** part of that sandbox. It's a standalone guidance repo,
-distributed independently of any application sandbox — checked out once in the user's home
-directory (e.g. `~/xskills` or `C:\Users\<user>\xskills`) and pointed at from the coding tool's
-config, or synced automatically via OpenCode's remote-config plugin. See the root
-[`README.md`](../../README.md) for setup details. Do not assume `xskills` lives alongside an
-application's own dependencies.
+`xskills` is distributed independently of application dependencies. Guidance may be
+installed in the coding tool, accessed from a local checkout or retrieved from an
+official release. Do not assume a fixed checkout path or require it to live inside
+or outside the sandbox. See [`README.rst`](../../README.rst) for tool-specific setup.
 
 A real application sandbox typically looks like:
 
@@ -33,6 +31,12 @@ A real application sandbox typically looks like:
 Do not assume a single monolithic repo containing all dependencies — check for a sandbox layout
 first when navigating an unfamiliar XMOS codebase.
 
+The examples here describe XCommon CMake conventions, not a required layout for every
+repository. Prefer XCommon CMake for new projects; existing repositories may use legacy
+Make-based XCommon or Waf-based xwaf. Identify the actual build system from repository
+documentation and CI, preserving its workflow during maintenance unless migration is
+requested. See [build-system selection](../xmos-build-system/SKILL.md#identify-the-projects-build-system).
+
 ### Repo naming/prefix convention
 
 XCommon CMake repos at the sandbox root follow a naming convention that indicates their role (see
@@ -42,22 +46,32 @@ XCommon CMake repos at the sandbox root follow a naming convention that indicate
   `app_*` subdirectory containing `src/` and a `CMakeLists.txt`. A single `sw_*` repo can contain
   several `app_*` targets (e.g. one per hardware variant).
 - **`lib_*`** — a module (source compiled directly into whatever links it) or a static-library repo
-  (prebuilt archive, optionally with source to rebuild it). Either way it provides a
-  `lib_build_info.cmake` instead of a top-level `CMakeLists.txt`, since it's never a build
-  entry-point itself.
+  (prebuilt archive, optionally with source to rebuild it). A module commonly provides
+  `lib_build_info.cmake` for consumers. Static-library rebuild projects and a library's
+  examples/tests may also provide `CMakeLists.txt` build entry points; inspect the actual
+  repository rather than inferring buildability solely from its prefix.
 
-All of these sit as siblings directly at the sandbox root — **no nesting** of one repo inside
-another — which is what lets independent applications share the same checked-out copy of a
-dependency and avoids dependency-loop issues.
+These repositories conventionally sit as siblings at the sandbox root, allowing
+applications to share dependency checkouts. Existing layouts and configured dependency
+location overrides may differ; preserve a working arrangement rather than reorganising
+it merely to match this example.
 
-## Finding agent guidance from inside an app repo
+## Finding repository and central agent guidance
 
-Because `xskills` is checked out once in the user's home directory (or loaded natively via
-OpenCode's remote-config plugin) rather than vendored into every app repo or sandbox, an app repo
-only needs a small pointer `AGENTS.md` at its root — a short file that tells an agent to look for
-`~/xskills/AGENTS.md` first, and otherwise fall back to fetching/cloning the canonical `xskills`
-repository. If you're navigating a sandbox and an app repo's `AGENTS.md` is just such a pointer,
-follow it to `~/xskills` rather than assuming the app repo has no agent guidance.
+Read the application or library repository's `AGENTS.md` and other applicable project
+instructions. Follow references to central XMOS guidance through an accessible installed
+copy, checkout or official release; a link alone does not install or load skills.
+Use the referenced release or version rather than assuming a particular branch or path.
+If central guidance cannot be accessed, state that limitation and continue using the
+project's documentation.
+
+Library guidance may have a shared prefix followed by `## Repository-Specific Guidance`.
+Read both, preserving the common instructions and any custom content. Repository-specific
+hardware, compatibility and legacy requirements take precedence over general recommendations.
+Do not infer that an older repository needs migration simply because its layout or
+implementation differs from current guidance. See
+[`xmos-library-repo-style`](../xmos-library-repo-style/SKILL.md) for maintaining library
+instructions.
 
 ## Always use a Python virtual environment
 
@@ -110,21 +124,22 @@ export MPLBACKEND=Agg      # bash/zsh
 Confirmed empirically: `lib_sw_pll`'s pure-Python `SimDut`-based tests (no compiled `.xe`/hardware
 needed) went from 11 errors to 0 once `MPLBACKEND=Agg` was set, with no other change.
 
-### Not every `lib_*` repo's `tests/` directory is a Python/pytest suite — check first
+### Identify the test workflow before running tests
 
-Some `lib_*` repos' `tests/` directories are pure Python (`pytest`), but others are ordinary
-XCommon CMake **C applications** using the Unity test framework, with no Python involved in running
-them at all — check for a `tests/CMakeLists.txt` with `include($ENV{XMOS_CMAKE_PATH}/xcommon.cmake)`
-before assuming a `tests/` directory needs a venv/`pip install`. Confirmed on `lib_xcore_math`
-v2.4.0: `tests/vect_tests/` (and its siblings `bfp_tests`, `dct_tests`, `fft_tests`, `filter_tests`,
-`scalar_tests`, `xs3_tests`) each build a standalone `.xe` (depending on `lib_unity`) targeting
-`XK-EVK-XU316` directly, with an `XMATH_SMOKE_TEST` CMake option to shrink repetition counts for a
-quick run — `cmake -B build -DXMATH_SMOKE_TEST=ON` + `xmake -C build` then `xrun --xscope
-bin\vect_tests.xe` ran all 182 smoke-mode cases directly on real hardware with no Python, no venv,
-and no prebuilt-fixture dependency at all — actually *easier* to exercise standalone than a
-Python-pytest-based suite (e.g. `lib_mic_array`/`lib_sw_pll`'s heavier hardware-fixture suites).
-`lib_xcore_math`'s `python/` directory (table/LUT-generator scripts invoked at build time by CMake,
-not a test runner) is a separate, unrelated thing from its C-based `tests/`.
+Read the repository's README and test documentation, then inspect its CI configuration —
+particularly the `Jenkinsfile` and any scripts it invokes — for supported test commands, build
+options and prerequisites. CI may depend on internal tooling or hardware fixtures, so identify
+which steps can be reproduced locally rather than copying the pipeline blindly.
+
+Do not infer the runner from a `tests/` directory or one file type alone: Python tests may build
+or launch target applications, and target builds may invoke Python generators. Establish whether
+the selected tests need a host runner, the simulator, hardware or additional fixtures.
+
+Use the documented environment and dependency versions. Run Python tooling in a virtual
+environment, activate XTC Tools when required, and select the smallest documented test target
+that verifies the change. See [`xmos-build-system`](../xmos-build-system/SKILL.md) and
+[`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md) for target applications, and
+[`xmos-testing`](../xmos-testing/SKILL.md) for writing tests.
 
 ## Where things live
 
@@ -132,6 +147,5 @@ not a test runner) is a separate, unrelated thing from its C-based `tests/`.
   specific repo's own layout.
 - Build output — `build/` and `bin/` (git-ignored; regenerated by
   [`xmos-build-system`](../xmos-build-system/SKILL.md)).
-- Fetched library dependency caches — under `XMOS_HOME`, not inside the sandbox's own repos (see
-  [`xmos-toolchain-paths`](../xmos-toolchain-paths/SKILL.md)).
-
+- Library dependency sources — see
+  [locating dependency sources](../xmos-build-system/SKILL.md#locating-dependency-sources).

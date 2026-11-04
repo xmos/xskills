@@ -1,6 +1,6 @@
 ---
 name: xmos-multi-tile-architecture
-description: Use when structuring a multi-tile XMOS application -- placing task entry-points on specific tiles (tile[N]), passing chanends between tiles, choosing/writing a top-level multi-tile XC file, or understanding why C alone cannot express tile placement. Also use when a project needs an .xn hardware-description file for a multi-tile target. Covers XTC Tools 15.3.1.
+description: Use when structuring a multi-tile XMOS application -- placing task entry-points on specific tiles (tile[N]), passing chanends between tiles, choosing/writing a top-level multi-tile XC file, accessing I/O owned by another tile, choosing regular or streaming channels between tiles, or understanding why C alone cannot express tile placement. Covers XTC Tools 15.3.1.
 ---
 
 # Multi-tile application structure
@@ -54,11 +54,18 @@ The `extern "C"` block forward-declares the C entry points so the XC file can re
 functions themselves are ordinary C, compiled and reasoned about like anything else in
 [`xmos-c-programming`](../xmos-c-programming/SKILL.md).
 
+`par` waits for all its tasks to return. Service tasks that loop forever are normal in embedded
+applications and keep the application running indefinitely.
+
+Tile placement must match the hardware topology described by the project's selected target or XN
+file. Use the existing project target; see [`xmos-build-system`](../xmos-build-system/SKILL.md) for
+target selection.
+
 ## Declaring a channel between tiles
 
 Add a `chan` in the multi-tile file and pass it to each tile-level entry point; the tools
 automatically allocate one chanend per entry-point that uses it and route it over the interconnect
-(see [`xs3-architecture`](../xs3-architecture/SKILL.md) for the switch/xCONNECT/XLINK concepts this
+(see [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md) for the switch/xCONNECT/XLINK concepts this
 relies on):
 
 ```c
@@ -103,34 +110,35 @@ The `chanend` type declared in the XC file is ABI-compatible at link time with l
 [`xmos-c-programming`](../xmos-c-programming/SKILL.md) — nothing tile-crossing-specific is needed
 once the chanend is in hand.
 
-## Hardware targets and `.xn` files
+**Each tile has its own local RAM.** Tasks on the same tile can share that memory with appropriate
+synchronisation and lifetime management. Passing a pointer through a channel does not make one
+tile's local RAM directly accessible from another tile: transfer the required data through
+channels, or use an explicitly supported remote-memory mechanism (see the memory model in
+[`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)).
 
-`-target=<board-name>` (e.g. `XK-EVK-XU316`) selects a known board's tile/pin topology. For a custom
-board, or when the target should be pinned explicitly and reproducibly, pass an `.xn` hardware
-description file as a build input instead — see
-[`xmos-build-system`](../xmos-build-system/SKILL.md) for the CMake `APP_HW_TARGET` variable and
-`xcc` invocation.
+## Regular vs streaming channels between tiles
 
-## Board-init pattern: a peripheral bus is owned by one tile
+- **Regular channels** (`chan_*`) handshake with control tokens on each transfer, which ends the
+  route through the interconnect between transfers.
+- **Streaming channels** (`s_chan_*`) omit that per-transfer handshake and hold their route open
+  until freed, so they consume interconnect routing capacity that other cross-tile traffic may need.
+- Both can block when the other end isn't ready; streaming is not asynchronous or unlimited
+  buffering. Both ends must use the same channel type and protocol.
 
-Board-support libraries commonly wire a shared peripheral bus (e.g. the on-board I2C bus used to
-configure an audio codec/PLL) to pins on only **one** tile. Any code running on a *different* tile
-that needs to use that bus cannot access it directly — the board-support library instead splits
-into a **remote server task** (runs on the tile that owns the bus, e.g. `..._AudioHwRemote(c)`) and
-**client calls** the other tile makes over a chanend (e.g. `..._AudioHwInit(&cfg)`,
-`..._AudioHwConfig(...)`), with the server relaying the actual I2C transactions. Two consequences to
-get right in application code:
+See [`xmos-c-programming`](../xmos-c-programming/SKILL.md) for the APIs and the
+[architecture manual](https://www.xmos.com/documentation/XM-014007-PS/html/doc/rst/xs3-arch-inst.html)
+for interconnect routing.
 
-- Start the remote server task *before* any client tile calls into the library, and don't forget the
-  channel connecting them — same rules as any other cross-tile call (see above).
-- The server task normally loops forever servicing requests, so the client must send an explicit
-  "exit" command over the same chanend (e.g. `chan_out_word(c, AUDIOHW_CMD_EXIT)`) once done, or the
-  server tile's entry function will never return and the `par` will hang waiting for it.
+## Accessing I/O on another tile
 
-This pattern was confirmed working end-to-end on real hardware via `lib_board_support`'s
-`app_evk_316_simple_c` example (tile 0 runs the I2C remote server, tile 1 initialises/configures the
-board's audio hardware then sends the exit command) — the same shape applies to any board-support
-library that centralises a shared bus on one tile.
+Hardware ports belong to a specific tile. A task cannot directly operate a port on another tile by
+passing its port identifier across tiles.
+
+Place the I/O-owning task on the tile with the required ports. Tasks on other tiles communicate
+requests and results with that task through channels, or through an XC interface where the existing
+application uses one. For new C/lib_xcore code, use channels between the tile-local tasks, with the
+top-level XC placement code connecting their endpoints. Launch the tasks concurrently in the same
+`par`, and follow the communication protocol's synchronisation and ownership rules.
 
 ## When this doesn't apply
 

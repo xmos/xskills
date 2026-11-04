@@ -1,6 +1,6 @@
 ---
 name: xmos-library-repo-style
-description: Use when creating or editing files in an XMOS library-style repository (lib_*, sc_*, fwk_*, sln_*, or similar) so that source headers, LICENSE, settings.yml, README.rst, and CHANGELOG.rst are in the standard XMOS house style from the start -- copyright headers, README section order and RST metadata fields, changelog format, version consistency across files, doc/rst structure, and dependency version pinning. Use alongside any repo-check/repo-linting tool that validates these conventions.
+description: Use when creating or editing files in an XMOS library-style repository (lib_*, sc_*, fwk_*, sln_*, or similar) so that source headers, LICENSE, settings.yml, README.rst, CHANGELOG.rst and repository agent guidance follow XMOS conventions -- copyright headers, README metadata, changelog format, version consistency, doc/rst structure, dependency version pinning and preservation of legacy compatibility. Use alongside any repo-check/repo-linting tool that validates these conventions.
 ---
 
 # XMOS library repository style
@@ -11,6 +11,27 @@ to match these conventions from the start avoids a separate clean-up pass later.
 (library vs. application-note vs. reference-design, etc.) is inferred from the repo's directory name
 prefix — this skill focuses on **library** repos; note the differences called out below for
 application-note (`an*`) repos where relevant.
+
+## Repository agent guidance and legacy compatibility
+
+Read and preserve the repository's existing `AGENTS.md`. Where it has shared guidance
+followed by `## Repository-Specific Guidance`, keep the shared prefix intact and place
+custom instructions after that heading. Do not overwrite existing project instructions
+when adding or updating references to central guidance.
+
+References to xskills should identify accessible guidance and follow the setup options
+in its [`README.rst`](../../README.rst). A URL alone does not install or load skills;
+do not assume a particular coding tool or local checkout path.
+
+Repository-specific hardware, compatibility and legacy requirements take precedence
+over general recommendations. Preserve existing APIs, supported targets, build systems
+and coding conventions unless migration is requested; avoid unrelated modernisation
+when maintaining older libraries.
+
+Only describe a library as superseded when the replacement is confirmed. If documenting
+that status, identify and link the successor in both repository-specific agent guidance
+and the README, distinguishing the recommendation for new development from instructions
+for maintaining the existing implementation.
 
 ## Copyright headers on every source file
 
@@ -185,6 +206,6 @@ see [`xmos-build-system`](../xmos-build-system/SKILL.md) on why `-g` matters for
 ## Related
 
 See [`xmos-project-structure`](../xmos-project-structure/SKILL.md) for the broader sandbox
-convention these repos live in, and [`embedded-c-practices`](../embedded-c-practices/SKILL.md) /
+convention these repos live in, and [`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md) /
 [`xmos-c-programming`](../xmos-c-programming/SKILL.md) for the source code itself rather than its
 packaging/documentation.

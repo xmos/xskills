@@ -1,14 +1,37 @@
 ---
 name: xmos-environment-setup
-description: Use when activating the XTC Tools command-line environment on Windows, macOS, or Linux; when `xcc`, `xrun`, `xsim`, `xgdb`, `xflash`, or `xmake` are reported as "command not found"; or when setting up a shell/terminal/CI job to build or run XMOS code. Covers XTC Tools 15.3.1.
+description: Use BEFORE running any XTC Tools command (`xcc`, `xmake`, `xrun`, `xsim`, `xgdb`, `xflash`, `xobjdump`) or an XCommon CMake configure/build (`cmake -G "Unix Makefiles"`, `xmake -C build`) for an XMOS project. Check activation in the executing shell; persistence between agent calls depends on the harness. Also use when commands are reported as "command not found" or "not recognized", or when setting up a shell/terminal/CI job to build or run XMOS code. Provides a one-command wrapper (scripts/xtc.ps1) for PowerShell. Covers XTC Tools 15.3.1.
 ---
 
 # XMOS environment setup
 
+## Quick start for agents (Windows PowerShell)
+
+Agent harnesses may start independent shells for tool calls; do not assume earlier activation
+persists. Activate and run in the **same** call using the wrapper in the `scripts` folder next to this
+file. `<skill-dir>` below is the directory containing this `SKILL.md`; substitute its absolute
+path:
+
+```powershell
+& "<skill-dir>\scripts\xtc.ps1" xmake -C build
+& "<skill-dir>\scripts\xtc.ps1" xrun --xscope bin\app.xe
+```
+
+The wrapper imports `SetEnv.bat` into the PowerShell process, runs the command and exits with its
+exit code. With no arguments it just activates the environment and prints `xcc --version`. It
+defaults to XTC 15.3.1; set `$env:XTC_VERSION` (or `$env:XTC_SETENV` for a full path to
+`SetEnv.bat`) to use another install. To run several commands in one call, dot-source it first:
+`. "<skill-dir>\scripts\xtc.ps1"; cmake -G "Unix Makefiles" -B build; xmake -C build`.
+
+The rest of this skill explains what the wrapper does and covers other shells and operating systems.
+
+## Background
+
 The XTC Tools (`xcc`, `xrun`, `xsim`, `xgdb`, `xflash`, `xmake`, `xobjdump`, ...) are not on `PATH`
-by default. The environment must be explicitly activated in every new shell before these commands
-will work. This is the most common reason a command "isn't found" or picks up the wrong tools
-version.
+by default. Ensure the executing shell has the selected tools environment, activating it when
+absent. A child process normally inherits its parent's exported environment, but independent
+terminals or agent calls may not share that parent. Missing activation is a common reason a
+command "isn't found" or picks up the wrong tools version.
 
 ## Windows
 
@@ -40,31 +63,49 @@ xcc --version   # confirm activation worked in this shell
 ```
 
 This is the reliable way to activate the environment non-interactively (e.g. from an agent's own
-terminal) without needing a fresh Command Prompt window. Repeat it in every new PowerShell
-session/process — like all environment activation, it is per-shell and does not persist.
+terminal) without needing a fresh Command Prompt window. Repeat it when the executing PowerShell
+session has not inherited the required environment.
 
 ## macOS
 
-1. Open a Terminal window.
-2. Run the `SetEnv.command` script from inside the tools installation directory, e.g.:
+**Interactively**: run the installation's `SetEnv.command`, e.g.
+`/Applications/XMOS_XTC_15.3.1/SetEnv.command`. It sources `SetEnv.sh` and then starts a
+new configured `bash` shell; enter XTC Tools commands in that shell. It does not activate
+the shell that launched it.
 
-   ```sh
-   /Applications/XMOS_XTC_15.3.1/SetEnv.command
-   ```
+**Non-interactively (agents, scripts, CI)**: do not use `SetEnv.command`, which waits in a
+new shell. Source the selected installation's `SetEnv.sh` and run the commands in the same
+shell call, from the project directory:
 
-   All XTC Tools commands must be entered in a Terminal in which this command has been run.
+```sh
+source "/Applications/XMOS_XTC_15.3.1/SetEnv.sh" &&
+xcc --version &&
+xmake -C build
+```
+
+Substitute the path of the installation the project requires.
 
 ## Linux
 
-1. Open a Terminal window.
-2. `cd` into the tools installation directory, then `source` the `SetEnv` script:
+**Interactively**: in a terminal, `cd` into the tools installation directory and `source`
+its `SetEnv` script, then run XTC Tools commands in that same terminal:
 
-   ```sh
-   cd ~/XMOS/XTC/15.3.1   # default install location - see below
-   source SetEnv
-   ```
+```sh
+cd ~/XMOS/XTC/15.3.1   # default install location - see below
+source SetEnv
+```
 
-   All XTC Tools commands must be entered in a Terminal in which this command has been run.
+**Non-interactively (agents, scripts, CI)**: activate and run the commands in the same shell
+call. The documented activation runs from the installation directory, so return to the
+project directory before building:
+
+```sh
+cd ~/XMOS/XTC/15.3.1 && source SetEnv && cd - >/dev/null &&
+xcc --version &&
+xmake -C build
+```
+
+Run this from the project directory, substituting the installation the project requires.
 
 ### Default Linux install location
 
@@ -82,8 +123,8 @@ that directory instead.
 
 Whatever the platform, the goal is the same: activation sets `XMOS_TOOL_PATH` and the related
 `XCC_*`/`PATH` variables described in
-[`xmos-toolchain-paths`](../xmos-toolchain-paths/SKILL.md) for the current shell session only
-(these tools do not require a permanently-modified system-wide `PATH`).
+[`xmos-toolchain-paths`](../xmos-toolchain-paths/SKILL.md) in the executing shell and its child
+processes (these tools do not require a permanently-modified system-wide `PATH`).
 
 ## Verifying activation
 
@@ -95,13 +136,16 @@ xcc --version
 
 This should print the XTC Tools version (report this version in any bug report). If it fails,
 the environment was not activated correctly in the current shell — re-run the activation step in
-this exact shell/terminal (activation is per-shell-session, not persistent).
+this exact shell/terminal rather than relying on an independent earlier tool call.
 
 ## Notes for scripts, CI, and agents
 
-- Environment activation must happen in **every new shell/process**, including each step of a CI
-  pipeline and each new terminal a coding agent opens. It is not inherited from a parent shell that
-  activated it earlier if a new shell process is spawned.
+- Exported environment variables are inherited by child processes; see the
+  [Bash environment reference](https://www.gnu.org/software/bash/manual/html_node/Environment.html).
+  Changes made inside a child process do not update its parent, which is why running `SetEnv.bat`
+  alone from PowerShell is insufficient. Independent CI steps or agent calls may start from an
+  unactivated environment. Check the actual executing shell rather than assuming either persistence
+  or a reset between calls.
 - Prefer verifying with `xcc --version` at the start of a task rather than assuming the environment
   is active, especially in automated/agent-driven workflows.
 - **PowerShell + `2>&1 | Select-Object`/`Out-String` can misreport a successful build as failed.**

@@ -1,5 +1,5 @@
 ---
-name: xs3-architecture
+name: xmos-xs3-architecture
 description: Use when reasoning about XS3 hardware concepts such as tiles, hardware threads/logical cores, the switch/interconnect, channels, ports, hardware timers, locks, the event/interrupt/exception model, the XS3 memory model, the vector unit, or floating point; or when deciding how many parallel tasks a tile can run, what exception a fault corresponds to, or how resources are allocated. Covers the XS3 architecture (XCORE.AI and other XS3-based devices).
 ---
 
@@ -7,6 +7,11 @@ description: Use when reasoning about XS3 hardware concepts such as tiles, hardw
 
 XS3 is the CPU architecture used by XCORE.AI and other current XMOS devices. It supports general
 purpose code, DSP algorithms, AI algorithms, and hard real-time code, side by side.
+
+**Terminology:** XMOS uses **logical core** to mean a **hardware thread**. This guidance
+generally uses "thread" for that hardware execution context. A task or job is software
+executed on a thread, not another name for the hardware resource. Other execution
+models may schedule multiple software tasks on one thread.
 
 **Full reference**: *The XMOS XS3 Architecture* (XM-014007-PS), published as browsable HTML at
 <https://www.xmos.com/documentation/XM-014007-PS/html/doc/rst/xs3-arch-inst.html>. It is the
@@ -61,31 +66,53 @@ Control tokens are grouped by numeric range:
 Each XCORE tile provides: per-thread registers, a thread scheduler, synchronisers, channels, ports,
 timers, clock generators, and hardware locks. Threads round-robin through a **short pipeline with no
 forwarding and no branch prediction/speculation** — this is what makes XS3 timing deterministic and
-predictable, unlike a general-purpose out-of-order CPU. Each thread has an instruction buffer that can hold
-256-bits worth of instructions. It is prefetched in aligned 128-bit chunks so several
-instructions can be fetched at once. Instructions are pre-fetched when the memory bus is not used by an instruction.
-long sequences of loads/stores occasionally need one extra
-"fetch no-op" cycle, which compilers/assemblers can usually avoid by interspersing ALU ops.
+predictable, unlike a general-purpose out-of-order CPU.
 
-**Performance model**: with `n` runnable threads on a tile, each thread is guaranteed at least
-`1/n` of the tile's processor cycles (a "thread cycle" = `n` processor cycles); in practice threads
-often get more because other threads are sometimes blocked waiting on I/O. A thread can never get more
-than 20% of the tile's processor cycles as the pipeline has five slots. This is why the *minimum*
-performance of a piece of code can be reasoned about by counting concurrently-runnable threads at
-that point in the program — a useful technique when budgeting real-time work across threads. A
-**fast-mode** exists for a thread to keep re-issuing an I/O instruction until it completes instead
-of being descheduled, for up to one I/O operation per virtual cycle. **High-priority threads** are
-also supported: if any high-priority thread is runnable it is scheduled, but at least one
-low-priority thread is still run on every iteration of the high-priority queue, so no thread ever
-starves.
+**Instruction fetch:** each XS3 thread has a **256-bit instruction buffer**, holding
+sixteen 16-bit or eight 32-bit instructions. Instruction fetches share the pipeline's
+memory-access stage with data accesses. Instructions that do not need a data access
+can use that stage to fetch instructions; if the buffer is empty when a thread should
+issue, a **fetch no-op** refills it, costing an extra thread cycle. Long sequences of
+loads/stores can therefore incur fetch overhead; interspersing suitable ALU operations
+can provide fetch opportunities. Consult
+[Scheduler Implementation](https://www.xmos.com/documentation/XM-014007-PS/html/doc/rst/xs3-arch-inst.html#scheduler-implementation)
+for the full rules, including branch-target fetching, rather than assuming every
+instruction sequence sustains the same issue rate.
+
+Keep **instruction-buffer width** separate from **memory-interface width**. The XS3
+Architecture v2.1.0, **Instruction Issue and Execution**, describes 128-bit-wide memory,
+whereas the XU316 datasheet v2.2.0,
+[SRAM](https://www.xmos.com/documentation/XM-014035-PC/html/rst/XU316-1024-FB265.html#sram),
+describes 256-bit-wide internal memory. These published descriptions disagree; do not
+silently reconcile them or infer instruction throughput from either width. Resolve
+the applicable interface definition before relying on it in a bandwidth calculation.
+
+**Performance model**: account for the pipeline's minimum issue interval as well as
+the number of active threads. One runnable thread does not receive the whole tile's
+issue rate. Use the exact device datasheet's **Logical cores** and **xTIME Scheduler**
+sections and the architecture manual's priority/fast-mode rules when budgeting work.
+For example, the
+[XU316 datasheet](https://www.xmos.com/documentation/XM-014035-PC/html/rst/XU316-1024-FB265.html#cores)
+documents a one-fifth allocation with up to five active cores and at least `1/n`
+above that; priority scheduling changes the guarantees. Keep issue opportunities,
+dual-issued instructions and elapsed time distinct. Do not extrapolate an unconditional
+`1/n` throughput guarantee to every thread count or scheduling mode.
 
 **Single vs dual issue**: an XS3 pipeline has two lanes — a **memory lane** (memory ops, branches,
 basic arithmetic) and a **resource lane** (resource ops, basic arithmetic). A thread running in
 **dual-issue** mode executes one 16-bit instruction per lane (or one 32-bit instruction) per thread
-cycle instead of one instruction per cycle; this is controlled by the `DI` bit in the status
+cycle (an issue opportunity for that thread) instead of one instruction per cycle; this is controlled by the `DI` bit in the status
 register and toggled per-function via `DUALENTSP`/`ENTSP`. This is why compiler output and stack
 size reports (see [`xmos-build-system`](../xmos-build-system/SKILL.md) `-report`) sometimes refer to
 "lanes" — see the manual's *XCore XS3 Lanes* chapter for which instructions require which lane(s).
+
+**Instruction timing:** use thread cycles as the ordinary instruction-issue model,
+accounting for dual issue rather than equating instruction count with tile-clock cycles.
+Divider operations can require multiple thread cycles, resource instructions may pause,
+and instruction-buffer refills can add fetch cycles. Before estimating execution time,
+consult the manual's
+[Instruction Issue and Execution](https://www.xmos.com/documentation/XM-014007-PS/html/doc/rst/xs3-arch-inst.html#instruction-issue-and-execution)
+section and the relevant instruction entries for execution and pause behaviour.
 
 ## Registers
 
@@ -149,7 +176,7 @@ independently of the CPU's own instruction timing.
 
 ## Ports (physical I/O)
 
-Ports connect logical cores to physical pins. Key concepts:
+Ports connect threads to physical pins. Key concepts:
 - A port can be **unbuffered** (transfers synchronised 1:1 with instruction execution) or
   **buffered** (a shift register converts between the port's physical width and a wider software
   transfer width — see `SETTW`/`SETPSC` in the manual for partial-word handling).
@@ -166,7 +193,7 @@ Ports connect logical cores to physical pins. Key concepts:
 XS3 supports up to three kinds of memory in a single linear address space (exact ranges are
 implementation/datasheet-specific): **internal RAM** (code/data, zero-latency access; typically
 program low, stack high, data/heap-equivalent in between — though XMOS code should avoid a heap, see
-[`embedded-c-practices`](../embedded-c-practices/SKILL.md)), **internal ROM** (boot/debug, fixed
+[`xmos-embedded-c-practices`](../xmos-embedded-c-practices/SKILL.md)), **internal ROM** (boot/debug, fixed
 entry points), and optionally **external memory** and/or **software-defined memory** (both served
 through a small cache — external memory maps a physical external chip; software-defined memory lets
 software satisfy cache misses itself, e.g. to execute-from-flash or map data from a remote tile).
@@ -230,7 +257,8 @@ expect old or new data randomly.
   (dedicated decimate-in-time/frequency instructions), with built-in saturation and rounding on
   every arithmetic op. This is the hardware DSP/ML acceleration referenced by "AI algorithms" in the
   architecture's stated purpose — relevant when a task involves audio/ML kernels that might benefit
-  from vectorised C libraries rather than hand-written scalar loops.
+  from vectorised C libraries rather than hand-written scalar loops (see
+  [`xmos-numeric-programming`](../xmos-numeric-programming/SKILL.md)).
   - Confirmed against `lib_xcore_math` v2.4.0 (the library that directly wraps this unit):
     `XS3_VPU_VREG_WIDTH_BITS` is literally defined as `256` in its `xmath/xs3/vpu_info.h`, with
     per-vector element counts `VPU_INT8_EPV=32`, `VPU_INT16_EPV=16` (and `VPU_INT32_EPV=8`) matching
@@ -242,7 +270,8 @@ expect old or new data randomly.
 ## Debug and initialisation
 
 Debugging is entered via `DCALL`, a triggered watchpoint/breakpoint, or an external debug signal;
-only thread 0 runs the debug handler while all other threads freeze, and `DRET` resumes everything.
+only thread 0 runs the debug handler while all other threads freeze,
+and `DRET` resumes everything.
 This hardware-level mechanism is what `xgdb` drives — see
 [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md) for the practical, tool-level
 workflow (breakpoints, multi-tile inspection, profiling) rather than the raw instructions.
@@ -255,4 +284,3 @@ than guessing when you need: the exact encoding/operands of a specific instructi
 alphabetical instruction reference (~250 instructions), the full exception table with which
 instructions can raise which exception, or the lane classification of a specific instruction for
 dual-issue reasoning.
-

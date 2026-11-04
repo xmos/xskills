@@ -1,11 +1,15 @@
 ---
-name: fix-repo-checks
-description: Use when test_repo_checks fails, when repo checks need fixing, or when user mentions "repo_checks", "repo checks", "infr_apps checks", "xmos checks". Automatically runs update scripts for fixable checks and AI-edits for unfixable checks in XMOS library repositories.
+name: xmos-internal-repo-checks
+description: Use when XMOS staff need to diagnose or fix test_repo_checks failures using the internal infr_apps scripts, or when the user mentions "repo_checks", "repo checks", "infr_apps checks", or "xmos checks". Runs update scripts for fixable checks and AI-edits for unfixable checks in XMOS library repositories. Requires access to XMOS internal infrastructure.
+compatibility: Requires access to the XMOS infr_apps repository and its Python tooling.
 ---
 
-# fix-repo-checks
+# XMOS internal repository checks
 
 Automatically fixes failures from `test_repo_checks` in XMOS library repositories by running update scripts for auto-fixable checks and using AI to repair unfixable checks.
+
+This workflow requires access to the internal `infr_apps` scripts. Confirm that access before
+running checks; if it is unavailable, explain the requirement and stop this workflow.
 
 ## When to Use
 
@@ -21,9 +25,11 @@ Automatically fixes failures from `test_repo_checks` in XMOS library repositorie
 Run the test suite to identify all failing checks:
 
 ```bash
-cd <repo_root>
-pytest ../infr_apps/lib/python/test_repo_checks.py --tb=short --dir=.
+pytest <infr_apps>/lib/python/test_repo_checks.py --tb=short --dir=<repo_root>
 ```
+
+Use absolute paths for both `<infr_apps>` and `<repo_root>`. Repositories are often nested inside
+a sandbox checkout, so do not assume `infr_apps` is a sibling of the target repository.
 
 Parse the output to identify which specific checks failed (e.g., `test_check_source`, `test_check_readme`, etc.).
 
@@ -31,8 +37,11 @@ Parse the output to identify which specific checks failed (e.g., `test_check_sou
 
 **Check for infr_apps:**
 
-1. Look for `../infr_apps` relative to the repository
-2. If not found, clone it:
+1. Search the target repository's ancestors and sandbox root for an `infr_apps` checkout containing
+   `lib/python/test_repo_checks.py`. Prefer the sandbox's canonical checkout over copies embedded in
+   unrelated repositories.
+2. If not found, clone it alongside the other sandbox repositories, not necessarily beside the
+   target repository:
    ```bash
    cd <repo_parent_dir>
    git clone git@github.com:xmos/infr_apps.git
@@ -40,33 +49,43 @@ Parse the output to identify which specific checks failed (e.g., `test_check_sou
 
 **Setup Python virtual environment:**
 
-1. Look for existing venv named `.venv_<repo_name>` (e.g., `.venv_lib_sw_pll` for lib_sw_pll)
-2. If found:
+1. First use the target repository's documented environment, if it has one. Otherwise look for an
+   existing environment that has the selected `infr_apps` and `infr_scripts_py` dependencies
+   installed. The environment name is not authoritative; verify imports before using it.
+2. Verify the candidate environment:
    ```bash
-   source .venv_<repo_name>/bin/activate
-   # Test if infr_apps is importable:
-   python -c "import sys; sys.path.append('../infr_apps/lib/python'); import xmos_source_check"
+   source <venv>/bin/activate
+   PYTHONPATH=<infr_apps>/lib/python python -c "import xmos_source_check; from build_system.repo_type import RepoType"
    ```
-3. If not found or import fails, create new venv:
+3. If no compatible environment exists, create `.venv_<repo_name>` and install the selected
+   `infr_apps` checkout:
    ```bash
    python3 -m venv .venv_<repo_name>
    source .venv_<repo_name>/bin/activate
-   pip install ../infr_apps
+   pip install <infr_apps>
    ```
 
 **Set PYTHONPATH:**
 ```bash
-export PYTHONPATH=../infr_apps/lib/python:$PYTHONPATH
+export PYTHONPATH=<infr_apps>/lib/python:$PYTHONPATH
 ```
+
+If pytest reports that `--dir` is unrecognized, the wrong test file was selected or its adjacent
+`conftest.py` is missing. Do not drop `--dir`; locate a complete, current `infr_apps` checkout.
 
 ### 3. READ LICENSE TYPE
 
 Before fixing source checks, determine the license type:
 
 ```bash
-# Extract license type from settings.yml
+# Extract license type when explicitly configured
 grep "^license:" settings.yml
 ```
+
+Not every repository declares `license` in `settings.yml`. If it is absent, identify the checked-in
+licence from `LICENSE.rst` or `LICENSE.txt` and map it to the updater's accepted value. For example,
+`XMOS PUBLIC LICENCE: Version 1` maps to `xmos_public_v1`. If the licence is missing or ambiguous,
+ask the user instead of guessing.
 
 **If license is `xmos_public_v1`:**
 
@@ -108,6 +127,10 @@ python xmos_source_check.py update <repo_path> <license_type>
 - Adds missing copyright headers
 - Updates copyright date ranges based on git history
 - Fixes license reference text to match the template
+
+The updater can prepend a current header without removing obsolete XMOS copyright or proprietary
+notice blocks later in the file. Always rerun `test_check_source`; if it reports those old lines,
+remove only the superseded notice block while preserving authorship comments and source code.
 
 **Common errors:**
 - `"File /path/to/file.c does not have current copyright at start of file"`
@@ -171,20 +194,9 @@ These checks require manual editing based on error analysis:
 
 **How to fix:** Edit `README.rst` based on error messages.
 
-**Common issues:**
-1. **Title format:** Must be `lib_sw_pll: Descriptive Title`
-   ```rst
-   lib_sw_pll: Software PLL Library
-   ===================================
-   ```
-
-2. **Required sections:**
-   - Summary
-   - Features
-   - Known Issues
-   - Support
-
-3. **RST syntax errors:** Run `rstcheck README.rst` to identify issues
+**Conventions:** follow [README.rst](../xmos-library-repo-style/SKILL.md#readmerst)
+in the style skill for title format, metadata and section order. Run an RST checker
+(for example `rstcheck README.rst`) for syntax errors.
 
 **Error patterns:**
 - `"readme_check: Title doesn't match expected..."`
@@ -193,8 +205,7 @@ These checks require manual editing based on error analysis:
 
 **Fix approach:**
 - Read the error message carefully
-- Edit README.rst to add missing sections or fix formatting
-- Ensure proper RST syntax (headings, bullet points, code blocks)
+- Edit README.rst to match the style skill's conventions and the checker's error
 
 ---
 
@@ -204,30 +215,9 @@ These checks require manual editing based on error analysis:
 
 **How to fix:** Edit `settings.yml` based on error messages.
 
-**Common issues:**
-1. **Missing first-line comment:**
-   ```yaml
-   # Copyright 2024 XMOS LIMITED.
-   ```
-
-2. **Invalid version format:** Must be `X.Y.Z`
-   ```yaml
-   version: "1.0.0"
-   ```
-
-3. **Missing cognidox numbers:**
-   ```yaml
-   cognidox:
-     user_guide: "1234-UG"    # User Guide
-     sw_manual: "1234-SM"      # Software Manual
-     app_note: "1234-AN"       # Application Note (if applicable)
-   ```
-
-4. **Doxygen project:**
-   ```yaml
-   doxygen:
-     project: "lib_sw_pll"
-   ```
+**Conventions:** follow [settings.yml](../xmos-library-repo-style/SKILL.md#settingsyml)
+in the style skill and the schema enforced by the selected `infr_apps` revision. Use
+the repository's existing structure; do not invent Cognidox part numbers.
 
 **Error patterns:**
 - `"settings.yml doesn't match basic schema"`
@@ -247,8 +237,8 @@ These checks require manual editing based on error analysis:
 
 **How to fix:** Synchronize versions across all files.
 
-**Files to check:**
-1. `README.rst` - First line or title should contain version
+**Files to check** (see [version consistency](../xmos-library-repo-style/SKILL.md#version-consistency)):
+1. `README.rst` - `:version:` metadata field
 2. `settings.yml` - `version:` field
 3. `CHANGELOG.rst` - First version entry
 4. `lib_build_info.cmake` - `set(LIB_VERSION "X.Y.Z")`
@@ -339,8 +329,13 @@ DEPENDENT_MODULES = lib_logging(>=2.0.0) lib_xassert(>=4.0.0)
 ```cmake
 set(LIB_NAME lib_sw_pll)
 set(LIB_VERSION "1.0.0")
-set(LIB_DEPENDENT_MODULES "lib_logging(>=2.0.0) lib_xassert(>=4.0.0)")
+set(LIB_DEPENDENT_MODULES "lib_logging(2.0.0)" "lib_xassert(4.0.0)")
 ```
+
+These versions illustrate the syntax; use versions verified for the repository.
+CMake entries are individually quoted exact references, not the legacy Makefile's
+minimum-version expressions. See
+[dependency version pinning](../xmos-library-repo-style/SKILL.md#dependency-version-pinning).
 
 **Common issues:**
 - Dependencies without version specifications
@@ -379,8 +374,8 @@ set(LIB_DEPENDENT_MODULES "lib_logging(>=2.0.0) lib_xassert(>=4.0.0)")
 After fixing each check, re-run the specific test to verify:
 
 ```bash
-pytest ../infr_apps/lib/python/test_repo_checks.py::test_check_<name> --tb=short --dir=.
-# Example: pytest ../infr_apps/lib/python/test_repo_checks.py::test_check_source --tb=short --dir=.
+pytest <infr_apps>/lib/python/test_repo_checks.py::test_check_<name> --tb=short --dir=<repo_root>
+# Example: pytest <infr_apps>/lib/python/test_repo_checks.py::test_check_source --tb=short --dir=<repo_root>
 ```
 
 If the check still fails, analyze the new error message and iterate.
@@ -390,7 +385,7 @@ If the check still fails, analyze the new error message and iterate.
 After all fixes are applied, run all originally-failing checks again:
 
 ```bash
-pytest ../infr_apps/lib/python/test_repo_checks.py --tb=short --dir=.
+pytest <infr_apps>/lib/python/test_repo_checks.py --tb=short --dir=<repo_root>
 ```
 
 ### 7. SUMMARY
@@ -432,7 +427,7 @@ Some checks are skipped based on repository type (from settings.yml):
 
 ## Reference Paths
 
-- **Test file:** `../infr_apps/lib/python/test_repo_checks.py`
+- **Test file:** `<infr_apps>/lib/python/test_repo_checks.py`
 - **Check scripts:** `../infr_apps/lib/python/xmos_*_check.py`
 - **Repository root:** Current working directory when skill is invoked
 
