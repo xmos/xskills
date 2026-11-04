@@ -1,5 +1,5 @@
 ---
-name: xmos-embedded-c-practices
+name: xmos-real-time-programming
 description: Use when writing or reviewing real-time code for XMOS/XCORE for general correctness and safety -- timers, port-clocks, avoiding skidding, decoupling xcore-timing and I/O timing, avoiding blocking threads, maximising concurrency.
 ---
 
