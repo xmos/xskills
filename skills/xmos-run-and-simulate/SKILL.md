@@ -91,9 +91,16 @@ simulator alone can produce.
 xsim a.xe
 ```
 
-**`xsim` is not real-time — it runs many times slower than real hardware.** Use it for functional
-testing, determinism, and tracing, not for validating real-time/timing behavior; use real hardware
-(`xrun`) for that.
+**Simulator wall-clock runtime is not target execution time.** A simulation can run much slower
+than hardware while still providing useful simulated cycle and instruction traces. The
+[XTC 15.3 xsim manual](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/cmd-line-tools/xsim-manual/xsim-manual.html)
+describes a **near cycle-accurate** model, instruction/machine-state tracing and peripheral
+loopbacks. Use those facilities for analysis within the configured model; do not treat the host's
+elapsed time as a target performance measurement or assume unmodelled peripherals are validated.
+Use hardware (`xrun`) to validate real peripheral timing and end-to-end system behaviour.
+
+Source verified against the installed XTC Tools 15.3.1 manual at
+`doc/html/tools-guide/tools-ref/cmd-line-tools/xsim-manual/xsim-manual.html`.
 
 ### Keep simulator runs to a minimum
 
@@ -210,7 +217,8 @@ running `connect -s` at the `(gdb)` prompt, then loading the program as usual.
 
 | Need | Use |
 |---|---|
-| Real-time/timing-sensitive validation | Hardware (`xrun`) |
+| Real peripheral timing / end-to-end hardware validation | Hardware (`xrun`) |
+| Simulated cycle/instruction analysis within the model | Simulator (`xsim`), then hardware where required |
 | No board available / CI | Simulator (`xsim`) |
 | Deterministic, repeatable test runs | Simulator (`xsim`) |
 | Fast host I/O / logging | `xrun --xscope` (hardware) |
