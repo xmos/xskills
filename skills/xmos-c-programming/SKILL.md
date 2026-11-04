@@ -123,6 +123,7 @@ hwtimer_free(t);
 ```
 
 Use hardware timers for delays and timed I/O instead of busy-loops. See
+[`xmos-real-time-programming`](../xmos-real-time-programming/SKILL.md) for deadline scheduling, and
 [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md) for using a hardware timer to
 manually measure the elapsed time of a specific code span.
 
@@ -154,7 +155,8 @@ condition as required. Selecting an event does not perform those operations auto
 
 If multiple events are ready, `SELECT_RES` does not guarantee which is selected
 (`SELECT_RES_ORDERED` provides priority ordering at extra cost). Keep handlers bounded;
-blocking or lengthy work delays other events serviced by the same thread. See the
+blocking or lengthy work delays other events serviced by the same thread (see
+[`xmos-real-time-programming`](../xmos-real-time-programming/SKILL.md) for event-loop budgets). See the
 [lib_xcore select documentation](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/libraries/lib-xcore-api/lib-xcore-api.html#c.SELECT_RES)
 for complete examples and ordering options.
 

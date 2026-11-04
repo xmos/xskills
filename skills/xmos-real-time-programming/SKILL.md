@@ -1,26 +1,35 @@
 ---
 name: xmos-real-time-programming
-description: Use when writing or reviewing real-time code for XMOS/XCORE for general correctness and safety -- timers, port-clocks, avoiding skidding, decoupling xcore-timing and I/O timing, avoiding blocking threads, maximising concurrency.
+description: Use when writing or reviewing real-time code for XMOS/XCORE for general correctness and safety -- timers, port-clocks, avoiding skidding, decoupling xcore-timing and I/O timing, avoiding unintended blocking in time-critical paths, maximising concurrency.
 ---
 
 # Real-time programming for XMOS
 
-General real-time programming, specialized for why it matters on XS3/XCORE specifically. See
-[`xmos-c-programming`](../xmos-c-programming/SKILL.md) for the XMOS-specific `lib_xcore` APIs these
-practices apply to.
+General real-time programming, specialized for why it matters on XS3/XCORE specifically. This skill
+owns timer scheduling and real-time design reasoning. Related skills cover the rest:
+
+- [`xmos-c-programming`](../xmos-c-programming/SKILL.md) — timer, port and `select` APIs and
+  handler behaviour.
+- [`xmos-clock-domains`](../xmos-clock-domains/SKILL.md) — establishing the actual reference and
+  port-clock sources and frequencies.
+- [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md) — thread issue rates, ports and
+  memory/channel mechanisms.
+- [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md) — measuring execution time.
+- [`xmos-testing`](../xmos-testing/SKILL.md) — validating deadlines and stressing interfaces.
 
 ## The wall-clock
 
-XMOS provides hardware-timers that give the program a time with a 100 MHz
-clock measured in 32-bit timers that wrap every 40 seconds. A thread can
-wait for a timer to be *after* a specific time by setting the trigger
-`hwtimer_set_trigger(tmr, time)` and subsequently inputting from the timer.
-Using a select construct enables the program to implement time-outs.
+Hardware timers count ticks of the reference clock (100 MHz by default; use the configured
+frequency, see [`xmos-clock-domains`](../xmos-clock-domains/SKILL.md)) in a 32-bit counter, which
+wraps every 2^32 ticks — approximately 42.95 seconds at 100 MHz. A thread can wait for a timer to be
+*after* a specific time by setting the trigger `hwtimer_set_trigger(tmr, time)` and subsequently
+inputting from the timer. Using a select construct enables the program to implement time-outs.
 
-The waiting after enables to wait up to 2^31 timer ticks into the future;
-the 2^31 timer ticks in the past are assumed 'after'. If a program needs to
-wait for more than 2^31 timer ticks then it should be cut into slices of 20
-seconds or less.
+The "after" comparison only works within half that range: a deadline up to 2^31 ticks in the future
+is waited for, and anything up to 2^31 ticks in the past counts as already passed. To wait longer
+than 2^31 ticks (about 21.47 seconds at 100 MHz), split the wait into shorter slices. This is a
+different limit from elapsed-time measurement, where unsigned subtraction works across a single
+full 2^32-tick wrap (see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md)).
 
 The 100 MHz timer is synchronous to the external clock supplied on XIN, and
 hence multiple tiles or dies that run on the same external clock will have
@@ -46,13 +55,13 @@ generated internally. For example, one can output a signal on a port
 relative to an external 24.576 MHz clock that is asynchronous to the clock
 input into the XCORE on the XIN pin. By outputting signals on that clock,
 the XCORE software has to be *fast enough* to meet the deadline. If it is
-early, the program will be clocked until the data can be output. It is
-possible to perform other tasks between outputs as long as the output is
-just in time; a few core-clocks before the data must go out onto the wire.
+early, the output waits until the port can accept the data.
 
-This practice of using port-clocks decouples software speed from IO speed.
-As long as the software is fast enough the system will operate faultless.
-Software can be artificially slowed down (by adding more tasks, or by
+Port clocks decouple pin timing from software execution timing. Software must supply or consume
+data before the relevant port/buffer deadline. Buffering can allow other work between transfers,
+provided the interface's timing requirements remain satisfied. See the ports section of
+[`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md) and the port/clock-block API
+documentation for the detailed contracts. Software can be artificially slowed down (by adding more tasks, or by
 lowering the clock speed of the processor) in order to save power or
 increase functionality.
 
@@ -91,7 +100,12 @@ thread.
 
 The system will miss events due to jitter if the total time of all events
 that may happen exceeds the time in which an event should be dealt with. In
-the case above, all cases should be able to cope with 600 issue slots
-delay. In general, each case has a contract with an maximum required issue
-rate and a maximally acceptable latency that should be met.
+the case above, assuming each handler runs once, neither blocks, and no
+further events arrive during servicing, both events complete within 600
+issue slots. Check repeated arrivals and each event's deadline separately;
+sufficient average processing capacity alone does not guarantee acceptable
+latency. In general, each case has a contract with a maximum required issue
+rate and a maximally acceptable latency that should be met. Convert issue
+slots to elapsed time using the thread's issue rate (see
+[`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)).
 
