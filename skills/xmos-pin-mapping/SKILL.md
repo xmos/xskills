@@ -177,3 +177,10 @@ interface. In the column place the signal name in the row associated with
 the pin. You can hide rows that are not relevant to the chosen package, and
 highlight rows that are unavailable due to the use of, for example, USB or
 MIPI PHYs.
+
+You must make an XN file where in the appropriate `<Tile>` section
+(there is one for each tile) you label each port that has been used with
+the appropriate signal name like
+`<Port Location="XS1_PORT_1L" name="I2C_SCL"/>`. When creating an XN ile
+make sure you use the correct package. More help on the XN file is in
+*AN02039* linked earlier.
