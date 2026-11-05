@@ -74,6 +74,9 @@ values. Measure the actual workload rather than assuming a universal speedup; se
 
 ## General real-time hygiene
 
+For timer scheduling, clocked I/O and real-time design, see
+[`xmos-real-time-programming`](../xmos-real-time-programming/SKILL.md).
+
 - Keep individual tasks' work per iteration bounded and predictable; avoid operations with
   unpredictable timing (e.g. unbounded loops driven by external input) inside time-critical loops.
 - Prefer the compiler/tooling's own facilities for checking resource and stack usage
