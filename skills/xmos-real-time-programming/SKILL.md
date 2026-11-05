@@ -28,8 +28,9 @@ inputting from the timer. Using a select construct enables the program to implem
 The "after" comparison only works within half that range: a deadline up to 2^31 ticks in the future
 is waited for, and anything up to 2^31 ticks in the past counts as already passed. To wait longer
 than 2^31 ticks (about 21.47 seconds at 100 MHz), split the wait into shorter slices. This is a
-different limit from elapsed-time measurement, where unsigned subtraction works across a single
-full 2^32-tick wrap (see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md)).
+different limit from elapsed-time measurement, where unsigned subtraction handles counter rollover
+provided the elapsed interval is strictly less than 2^32 ticks (see
+[`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md)).
 
 The 100 MHz timer is synchronous to the external clock supplied on XIN, and
 hence multiple tiles or dies that run on the same external clock will have
