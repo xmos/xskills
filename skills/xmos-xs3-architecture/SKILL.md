@@ -25,15 +25,15 @@ to consult directly themselves.
 
 ## Core building block: the tile
 
-At its simplest, XS3 comprises an execution unit (scalar ALU for floating point/integer, plus a
-vector unit for integer SIMD), a register file, and internal SRAM. Special instructions operate on
+A tile packages SRAM memory, an execution unit, resources, and **multiple hardware threads** (also called logical
+cores) together. 
+The execution unit comprises a scalar ALU for floating point/integer, plus a
+vector unit for integer SIMD. Special instructions operate on
 **resources** — hardware units (ports, timers, locks, synchronisers) that execute independently of
 the instruction stream and can dispatch single-cycle events, which in many cases avoids the cost of
 interrupts.
-
-A tile packages memory, one execution unit, resources, and **multiple hardware threads**
-together. Each thread has its own complete register file (general registers,
-program counter, stack pointer, etc.), so the execution unit can switch between threads with zero
+Each hardware thread has its own complete register file (general registers,
+program counter, stack pointer, etc.), so the execution unit switches between threads with zero
 overhead. A tile can be thought of as a symmetric shared-memory multiprocessor: its threads share
 the tile's memory, execution unit, and resources, and synchronise via locks/synchronisers. The
 exact number of threads, tiles, and resources on a given device is specified in that device's own
@@ -51,7 +51,8 @@ other XCORE devices entirely (over **XLINKs**). This is deliberately location-tr
 channel-based code works whether the other end is on the same tile, a different tile, or a
 different chip.
 
-XLINKs carry **control tokens** and **data tokens**. Control tokens are grouped by numeric range:
+XLINKs carry **control tokens** and **data tokens**. Data tokens are bytes of data.
+Control tokens are grouped by numeric range:
 - **0–127 (Application tokens)** — for use by compilers/applications to implement streamed,
   packetised, and synchronised communication (this is where `END`/`PAUSE`, described below, live).
 - **128–191 (Special tokens)** — architecturally defined, standard encodings of common data types.
@@ -143,8 +144,11 @@ notifies software of a state change).
 Channel ends carry data tokens and control tokens; a connection is established on the first output
 and terminated by a special **`END`** control token, after which the same channel end can establish
 a new route. **`PAUSE`** is a control token used to break up long messages/streams without ending
-the connection, letting the interconnect be shared fairly. Channels are full-duplex and buffered
-(at least one word); output blocks if the channel is too full, input blocks if not enough data has
+the connection, letting the interconnect be shared fairly. Messages (whether ended by PAUSE of END)
+may arrive out of order. For this purpose an empty message is often sent in the other direction to
+acknowledge receipt of a message. Channels are full-duplex and buffered
+(at least one word and one token, two words on xcore.ai); output blocks if data cannot be delivered full.
+Input blocks if not enough data has
 arrived yet — this is the hardware-level rendezvous behind the blocking channel API described in
 [`xmos-c-programming`](../xmos-c-programming/SKILL.md). Channel ends can also be allocated to one of
 several independent logical **networks**, so (for example) short control messages and long data
@@ -159,7 +163,7 @@ safely divisible between them.
 
 ## Timers
 
-Each tile has a 100 MHz free-running **reference clock** and a set of programmable **timers** that
+Each tile has a 100 MHz **reference clock** and a set of programmable **timers** that
 threads can read (current time) or block on (wait until a given time is reached). Ports can also be
 driven by one of several **programmable clocks** (rather than the reference clock), with an 8-bit
 clock divider, which is how synchronous I/O interfaces (e.g. an external audio clock) are supported
@@ -199,6 +203,11 @@ contention from multiple threads — avoid relying on it for real-time-critical 
 Spreading an application's data across more than one of these memories (or simply exceeding 256KB
 of static data on a tile) has compiler implications too — see the `-mcmodel` memory-model flag in
 [`xmos-c-programming`](../xmos-c-programming/SKILL.md).
+
+Code may assume that memory is updated immediately, and it is ok to, for example, store data in memory,
+send a message to another thread, and then read that data from memory. This is useful for handing
+buffers around. Asynchronous read-write access to memory by threads should be avoided, unless threads
+expect old or new data randomly.
 
 ## Events, interrupts, and exceptions
 
