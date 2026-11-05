@@ -21,12 +21,12 @@ There are three documents to refer to:
   This contains an extended description of this skill.
 
 - *xcore.ai Package port map* (XM-014394-PC), published as an excel spreadsheet on 
-  <https://www.xmos.com/documentation/XM-014394-PC/portmap.xlsx>. This is
+  <https://www.xmos.com/download/xcore_ai-Package-port-map.xls?version=latest>. This is
   called the port-map, and shows which packages bring out which ports on
   which pins.
 
 - *xcore.ai datasheet* (XM-015129-PC), published as browsable HTML at
-  <https://www.xmos.com/documentation/XM-015129-PC/doc/rst/datasheet.html>.
+  <https://www.xmos.com/documentation/XM-015129-PC/html/rst/XU316-1024.html>.
   Sections of particular importance are:
   
   - **Pin Configuration** that contains contains graphical representations
@@ -40,7 +40,8 @@ package. This goes through three indirections:
 
 - All IO signals are represented by *ports* in the architecture, where a
   port is 1, 4, 8, 16, or 32 bits wide. Ports can serialise and deserialise
-  signals. SKILL REF. Given a system requirement of, say, Quad-SPI that
+  signals (see [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)).
+  Given a system requirement of, say, Quad-SPI that
   requires one 4-bit signal and two 1-bit signals the software would be
   most efficiently written using one 4-bit port and two 1-bit ports. When
   using the standard XMOS libraries, it will specify what port-widths are
@@ -151,7 +152,8 @@ some letters (I, O, S) are not used for row names.
 
 ## Multiple tiles
 
-Each tile (SKILL REF) has it's own set of ports. As a rule, interfaces that
+Each tile (see [`xmos-xs3-architecture`](../xmos-xs3-architecture/SKILL.md)).
+has it's own set of ports. As a rule, interfaces that
 require a multitude of GPIO signals need to have their ports co-located on
 the same tile. The exception may be very slow interfaces (such as reset
 signals) that may be driven from elsewhere.
