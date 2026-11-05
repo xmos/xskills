@@ -167,3 +167,13 @@ Hence, you must consider three items simultaneously:
 - which package to use
 
 You may have to run a few experiments. Also confirm with the user for future extensibility.
+
+## Showing the end-result
+
+You can show the end-result by using the graphical representation from the
+datasheet, and annotating the pins with the signal names for each of the
+interfaces. You should also add columns to the portmap spreadsheet; one per
+interface. In the column place the signal name in the row associated with
+the pin. You can hide rows that are not relevant to the chosen package, and
+highlight rows that are unavailable due to the use of, for example, USB or
+MIPI PHYs.
