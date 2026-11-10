@@ -12,7 +12,7 @@ verify the correct use GPIO that has been specified. When designing GPIO
 use, always verify that the GPIO is fit for purpose, there may be physical
 aspects that are outside the scope of this skill.
 
-## Pins, , and ports
+## Pins, ports, the Portman and the XN file
 
 There are three documents to refer to: 
 
@@ -181,6 +181,6 @@ MIPI PHYs.
 You must make an XN file where in the appropriate `<Tile>` section
 (there is one for each tile) you label each port that has been used with
 the appropriate signal name like
-`<Port Location="XS1_PORT_1L" name="I2C_SCL"/>`. When creating an XN ile
+`<Port Location="XS1_PORT_1L" Name="I2C_SCL"/>`. When creating an XN ile
 make sure you use the correct package. More help on the XN file is in
 *AN02039* linked earlier.
