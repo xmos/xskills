@@ -115,6 +115,9 @@ Be careful with multiple functions being mapped onto a single IO pins on
 the package, or with ports being used by other on-chip elements such as
 MIPI or USB.
 
+* Ports are muxed, and narrow ports always have precendence over wider
+  ports.
+
 * Ports used by USB or MIPI are colored in the portmap. When a tile needs
   one of the PHYs (for example for a USB project), none of those ports
   should be used by anything else. Note that where 8-bit ports are being
@@ -138,6 +141,13 @@ MIPI or USB.
   (section **Boot Procedure**). The most common case is the use of QSPI
   flash, this is also listed in the port-map.
 
+If you have a choice, avoid sharing two interfaces on a wide port, and
+instead use two narrower ports for the two interfaces.
+
+Not all pins of a port may be bonded out on a package. You can still use
+the bonded out pins, it just means that on input the bits that were not
+bonded out must be masked.
+
 ## Physical locations of pins
 
 All N-bit ports are interchangeable with each other (apart from any
@@ -150,6 +160,13 @@ in mind that on QFP and TQFP packages the GPIO with the highest pin number
 ise also be near pin 1. On a BGA package that uses a pin GRID pins are
 two-dimensional, so they must be close in both dimensions. Also note that
 some letters (I, O, S) are not used for row names.
+
+## XSCOPE Usage
+
+If unspecified, you must check whether XSCOPE (for fast debugging) is
+required or not. If XSCOPE Is required you must reserve a 2-wire link (4
+pins) for XSCOPE. If it is not required, check that the user understands
+that they will debug over JTAG only.
 
 ## Multiple tiles
 
@@ -178,6 +195,9 @@ interface. In the column place the signal name in the row associated with
 the pin. You can hide rows that are not relevant to the chosen package, and
 highlight rows that are unavailable due to the use of, for example, USB or
 MIPI PHYs.
+
+You must make a table showing the XnDmm name, the pin number, and the port
+name/bit number for each element of the interface. One line per pin.
 
 You must make an XN file where in the appropriate `<Tile>` section
 (there is one for each tile) you label each port that has been used with
