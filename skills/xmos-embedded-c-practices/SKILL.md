@@ -1,6 +1,6 @@
 ---
 name: xmos-embedded-c-practices
-description: Use when writing or reviewing embedded C for XMOS/XCORE for general correctness and safety -- avoiding dynamic allocation, sizing stacks, avoiding unbounded recursion, event-driven waiting, VPU-based memory copies/fills and real-time hygiene. Numeric/DSP choices are in xmos-numeric-programming. Complements xmos-c-programming for lib_xcore-specific APIs.
+description: Use when writing or reviewing embedded C for XMOS/XCORE for general correctness and safety -- avoiding dynamic allocation, sizing stacks, avoiding unbounded recursion, event-driven waiting, VPU-based memory copies/fills, choosing lightweight printing/logging and real-time hygiene. Numeric/DSP choices are in xmos-numeric-programming. Complements xmos-c-programming for lib_xcore-specific APIs.
 ---
 
 # Embedded C practices for XMOS
@@ -71,6 +71,11 @@ A typed element fill is not generally equivalent to the byte
 pattern written by `memset()`. Check element counts versus byte counts and the intended
 values. Measure the actual workload rather than assuming a universal speedup; see
 [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md).
+
+## Printing and diagnostic logging
+
+Use [`xmos-printing-logging`](../xmos-printing-logging/SKILL.md) for printing API selection,
+library diagnostics, buffering and host-I/O transport guidance.
 
 ## General real-time hygiene
 

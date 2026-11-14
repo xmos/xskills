@@ -36,19 +36,25 @@ int main(void)
 
 ```c
 // main.c
-#include <stdio.h>
+#include <print.h>
 
-void main_tile0(void) { printf("Hello from tile 0\n"); }
-void main_tile1(void) { printf("Hello from tile 1\n"); }
+void main_tile0(void) { printstrln("Hello from tile 0"); }
+void main_tile1(void) { printstrln("Hello from tile 1"); }
 ```
 
 Build and run like any other application (see
 [`xmos-build-system`](../xmos-build-system/SKILL.md), [`xmos-run-and-simulate`](../xmos-run-and-simulate/SKILL.md)):
 
+For host output, create `text.xscope` using the
+[xSCOPE text-I/O setup](../xmos-printing-logging/SKILL.md#configure-xscope-text-io)
+and confirm the target's xSCOPE xLINK is wired through to the XTAG debugger. Then build and run:
+
 ```sh
-xcc -target=XK-EVK-XU316 multitile.xc main.c
-xrun --io a.xe
+xcc -target=XK-EVK-XU316 multitile.xc main.c text.xscope
+xrun --xscope a.xe
 ```
+
+If the board cannot support xSCOPE, omit `text.xscope` and use `xrun --io a.xe` as a fallback.
 
 The `extern "C"` block forward-declares the C entry points so the XC file can reference them; the
 functions themselves are ordinary C, compiled and reasoned about like anything else in

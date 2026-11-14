@@ -40,7 +40,7 @@ and verification requirements also apply to maintenance work.
 6. **Prefer configured xSCOPE I/O over JTAG `--io` for logging.** JTAG debug transfers halt
    all hardware threads (logical cores) on a tile. The configured xSCOPE write path avoids those tile-wide
    halts, but still has overhead and bandwidth limits. See
-   [`xmos-debugging-profiling`](./skills/xmos-debugging-profiling/SKILL.md).
+   [`xmos-printing-logging`](./skills/xmos-printing-logging/SKILL.md).
 7. **Cite the source.** When giving XMOS-specific guidance, prefer information verified in the XTC
    Tools 15.3 documentation or the XS3 architecture manual over general embedded knowledge. If
    something cannot be verified from a skill or the docs, say so rather than guessing.
@@ -91,7 +91,8 @@ and installation.
 | [`xmos-build-system`](./skills/xmos-build-system/SKILL.md) | Building an XMOS application from the command line, with XCommon CMake or with `xcc` directly. |
 | [`xmos-run-and-simulate`](./skills/xmos-run-and-simulate/SKILL.md) | Running a `.xe` on hardware with `xrun`, or in the simulator with `xsim`; understanding simulation speed and tracing. |
 | [`xmos-flashing`](./skills/xmos-flashing/SKILL.md) | Writing a `.xe` to non-volatile flash with `xflash` so it boots standalone; factory/upgrade images; choosing `xrun` (RAM, temporary) vs `xflash` (flash, persistent). |
-| [`xmos-debugging-profiling`](./skills/xmos-debugging-profiling/SKILL.md) | Debugging with `xgdb`, profiling with `xgprof`/`xsim --gprof`, or fast "printf debugging" with xSCOPE. |
+| [`xmos-debugging-profiling`](./skills/xmos-debugging-profiling/SKILL.md) | Debugging with `xgdb`, profiling with `xgprof`/`xsim --gprof`, measuring execution time, or adding structured xSCOPE probes. |
+| [`xmos-printing-logging`](./skills/xmos-printing-logging/SKILL.md) | Choosing `print.h` vs `lib_logging` vs `stdio.h`, configuring per-unit diagnostics, handling buffering/interleaving, or setting up xSCOPE text I/O. |
 | [`xmos-vscode-extension`](./skills/xmos-vscode-extension/SKILL.md) | Using the XMOS XTC Tools VS Code extension (build/run/debug/flash buttons, tasks.json, launch.json, IntelliSense). |
 | [`xmos-xs3-architecture`](./skills/xmos-xs3-architecture/SKILL.md) | Reasoning about XS3 hardware concepts: tiles, hardware threads, channels, ports, timers, locks, events/interrupts, memory model. |
 | [`xmos-c-programming`](./skills/xmos-c-programming/SKILL.md) | Writing multicore XMOS C code with `lib_xcore`: parallel tasks, channels, ports, timers, `select`. |

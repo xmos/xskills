@@ -210,7 +210,7 @@ xcc -target=<platform.xn> file1.c file2.xc -o a.xe
 | `-report` | Prints a per-tile breakdown of stack, code, and data memory usage. Use this to check stack sizing rather than guessing — see [`xmos-c-programming`](../xmos-c-programming/SKILL.md) on why stack size is statically calculated on XCORE. |
 | `-target=<platform>` or a `.xn` file as an input | Selects the target hardware platform. Prefer passing an explicit `.xn` file as a build input over `-target=` for any project expected to live for a while, since it is more explicit and reproducible. |
 | `-Wall`, `-Werror` | Standard warning controls. |
-| `-fxscope[=link]` | Enables xSCOPE and its target library without a `.xscope` config file; does not redirect text I/O (`ioMode="none"`) — see [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md). |
+| `-fxscope[=link]` | Enables xSCOPE and its target library without a `.xscope` config file; does not redirect text I/O (`ioMode="none"`) — see [`xmos-printing-logging`](../xmos-printing-logging/SKILL.md#configure-xscope-text-io). |
 | `-mcmodel=small\|large\|hybrid` | Selects the memory model (per source file); `small` (default) is most efficient but requires a tile's static data to fit in one contiguous 256KB region; switch to `hybrid`/`large` only if the linker reports a size/range error — see [`xmos-c-programming`](../xmos-c-programming/SKILL.md) for the full explanation. |
 
 ## Suspected stale build cache
