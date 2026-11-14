@@ -18,3 +18,5 @@ bin/
 Thumbs.db
 .vscode/*
 !.vscode/extensions.json
+*.swp
+*.swo
