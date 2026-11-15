@@ -207,7 +207,7 @@ existing ``repositories`` array:
      "repositories": [
        {
          "url": "https://github.com/xmos/xskills.git",
-         "ref": "develop"
+         "ref": "main"
        }
      ]
    }
