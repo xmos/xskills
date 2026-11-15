@@ -17,6 +17,12 @@ Skills are loaded on demand for tasks such as building applications, programming
 multicore C, debugging, and running on hardware or in simulation. Each skill
 includes instructions and may include supporting scripts.
 
+These workflows are for both XMOS engineers and external developers. They do not
+establish ownership of a project or authorise changes to its copyright, licence
+or vendor. Agents must not determine ownership: preserve existing notices and use only
+project-supplied notice instructions. Otherwise add no new attribution and continue
+ordinary coding without ownership questions.
+
 Skills
 ======
 

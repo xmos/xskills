@@ -1,28 +1,50 @@
 ---
 name: xmos-internal-repo-checks
-description: Use when XMOS staff need to diagnose or fix test_repo_checks failures using the internal infr_apps scripts, or when the user mentions "repo_checks", "repo checks", "infr_apps checks", or "xmos checks". Runs update scripts for fixable checks and AI-edits for unfixable checks in XMOS library repositories. Requires access to XMOS internal infrastructure.
+description: Use when diagnosing or fixing test_repo_checks failures using internal infr_apps scripts, including "repo_checks", "repo checks", "infr_apps checks" or "xmos checks". Requires confirmed applicability of internal checks and access to XMOS infrastructure, not assumed ownership. Source, licence and vendor updates require explicit project authorisation; other checks use applicable update scripts or manual edits.
 compatibility: Requires access to the XMOS infr_apps repository and its Python tooling.
 ---
 
 # XMOS internal repository checks
 
-Automatically fixes failures from `test_repo_checks` in XMOS library repositories by running update scripts for auto-fixable checks and using AI to repair unfixable checks.
+Diagnose failures from `test_repo_checks` and fix them within the project's confirmed
+requirements. Internal checks are not appropriate for every project targeting XMOS devices.
 
 This workflow requires access to the internal `infr_apps` scripts. Confirm that access before
 running checks; if it is unavailable, explain the requirement and stop this workflow.
+
+## Ownership and licensing
+
+Confirm that the project actually uses these internal checks before applying their
+conventions. Do not infer ownership from repository prefixes, XMOS hardware, organisation
+membership, the user's employer, commit history, access to `infr_apps` or licence choice. Customer and
+personal projects do not acquire XMOS ownership by using this workflow.
+
+Do not determine legal ownership. Preserve existing copyright, attribution and licence
+notices, including third-party notices; do not judge their legitimacy. Source/licence
+updaters can insert corporate attribution or replace legal terms. Run them only under
+explicit project instructions supplying the notice text or template, licence terms,
+affected files and intended changes. Do not investigate ownership to fill missing inputs.
+Without such instructions, add no new attribution and leave existing legal metadata
+unchanged. Continue ordinary coding without investigating ownership or asking ownership
+questions. Ask only when the requested task requires a legal-metadata edit and the
+necessary instructions are missing or conflicting. Existing project instructions need
+no separate ownership verification.
+A failing checker is not authorisation to change copyright, licensing or vendor identity.
+Report a checker-policy mismatch rather than forcing a customer project into XMOS templates.
 
 ## When to Use
 
 - User reports `test_repo_checks` failures
 - User mentions "fix repo checks", "repo_checks", "infr_apps checks"
 - Jenkins pipeline fails on "Repo checks" stage
-- Working on XMOS library repositories (lib_*, fwk_*, etc.)
+- The project's documented workflow requires these internal repository checks
 
 ## Workflow
 
 ### 1. DISCOVERY PHASE
 
-Run the test suite to identify all failing checks:
+After confirming applicability and completing environment setup below, run the test
+suite to identify all failing checks:
 
 ```bash
 pytest <infr_apps>/lib/python/test_repo_checks.py --tb=short --dir=<repo_root>
@@ -73,34 +95,34 @@ export PYTHONPATH=<infr_apps>/lib/python:$PYTHONPATH
 If pytest reports that `--dir` is unrecognized, the wrong test file was selected or its adjacent
 `conftest.py` is missing. Do not drop `--dir`; locate a complete, current `infr_apps` checkout.
 
-### 3. READ LICENSE TYPE
+### 3. CONFIRM LEGAL-METADATA SCOPE
 
-Before fixing source checks, determine the license type:
+Before any source or licence update:
+
+1. Read the project's supplied notice policy and preserve existing notices and licence
+   files. Do not classify files by apparent ownership. Exclude every file not explicitly
+   covered by the supplied update scope, including vendored and generated files.
+2. Require explicit project instructions supplying the notice text or template, licence
+   terms, file scope and intended changes. Do not verify ownership independently.
+   A request to "fix repo checks" alone is insufficient.
+3. Inspect the selected updater and its templates to confirm that its behaviour matches
+   that authorisation. If it cannot preserve required holders or terms, do not run it;
+   report the mismatch and ask about an appropriate checker configuration or scoped edit.
+4. Treat configuration as the current setup, not as a substitute for notice instructions.
+   If the supplied instructions are missing or conflicting, leave legal metadata unchanged
+   and ask only about the required edit. Do not choose a holder, vendor or licence yourself.
+
+For diagnosis, inspect a licence type when explicitly configured:
 
 ```bash
 # Extract license type when explicitly configured
 grep "^license:" settings.yml
 ```
 
-Not every repository declares `license` in `settings.yml`. If it is absent, identify the checked-in
-licence from `LICENSE.rst` or `LICENSE.txt` and map it to the updater's accepted value. For example,
-`XMOS PUBLIC LICENCE: Version 1` maps to `xmos_public_v1`. If the licence is missing or ambiguous,
-ask the user instead of guessing.
-
-**If license is `xmos_public_v1`:**
-
-Scan the repository for potential issues that might make the public license inappropriate:
-
-- Third-party code in the repository (check for external dependencies, vendored code)
-- Sensitive IP indicators (proprietary algorithms, confidential comments, internal URLs)
-- Files that don't look like standard XMOS open-source code
-
-If concerns are found, **ASK THE USER**:
-> "This repository uses `xmos_public_v1` (public open-source license), but I found [specific concerns]. Is this license appropriate for this code, or should it use a different license like `xmos_old` (proprietary)?"
-
-Wait for user confirmation before proceeding.
-
-Store the license type for use in source check updates.
+Not every repository declares `license` in `settings.yml`; inspect its existing licence
+files and the selected tool's accepted values. Matching a licence to a tool value does
+not satisfy the authorisation gate above. Flag potential licensing or confidentiality
+conflicts for the project owner without choosing different terms or rewriting notices.
 
 ### 4. FIX EACH FAILING CHECK
 
@@ -108,19 +130,22 @@ Process each failing check according to its type:
 
 ---
 
-#### AUTO-FIXABLE CHECKS (Run Update Scripts)
+#### SCRIPTED CHECKS (Subject to Project Authorisation)
 
-These checks have built-in `update` modes that automatically fix issues:
+These checks have built-in `update` modes. Classify their effects before using them;
+source and licence updates require the section 3 gate, even if the checker calls them fixable.
 
 ##### `test_check_source` - Copyright Headers
 
 **What it checks:** Source files (.c, .h, .py, .xc, etc.) have correct copyright headers with accurate dates and license references.
 
-**How to fix:**
+**Authorisation required:** Complete section 3 before running this command. Check that
+the selected script's exact notice text and file scope match the project's supplied
+instructions; otherwise leave notices unchanged and report the mismatch.
+
+**Conditional command (not a default fix):**
 ```bash
-cd ../infr_apps/lib/python
-python xmos_source_check.py update <repo_path> <license_type>
-# Example: python xmos_source_check.py update ../../lib_sw_pll xmos_public_v1
+python <infr_apps>/lib/python/xmos_source_check.py update <repo_path> <project_supplied_license_type>
 ```
 
 **What it does:**
@@ -128,9 +153,10 @@ python xmos_source_check.py update <repo_path> <license_type>
 - Updates copyright date ranges based on git history
 - Fixes license reference text to match the template
 
-The updater can prepend a current header without removing obsolete XMOS copyright or proprietary
-notice blocks later in the file. Always rerun `test_check_source`; if it reports those old lines,
-remove only the superseded notice block while preserving authorship comments and source code.
+Review the full diff for added, replaced or duplicated legal notices before rerunning
+`test_check_source`. A reported old or duplicate notice is not permission to remove it.
+Preserve existing copyright, third-party attribution and licence terms; remove or replace
+a notice only where the supplied instructions explicitly cover it, not your ownership judgement.
 
 **Common errors:**
 - `"File /path/to/file.c does not have current copyright at start of file"`
@@ -144,16 +170,21 @@ remove only the superseded notice block while preserving authorship comments and
 
 **What it checks:** `LICENSE.rst` or `LICENSE.txt` matches the expected template for the license type in `settings.yml`.
 
-**How to fix:**
+**Authorisation required:** Complete section 3 before running this command. Compare the
+updater's licence terms, file scope and exact template with the supplied project instructions.
+Missing or mismatched licence files are not permission to choose terms or a holder.
+
+**Conditional command (not a default fix):**
 ```bash
-cd ../infr_apps/lib/python
-python xmos_license_check.py update <repo_path>
-# Example: python xmos_license_check.py update ../../lib_sw_pll
+python <infr_apps>/lib/python/xmos_license_check.py update <repo_path>
 ```
 
 **What it does:**
 - Reads license type from `settings.yml`
 - Writes the correct LICENSE.rst template
+
+Review the diff against the approved terms. Preserve existing licence files and their
+scope; do not delete additional licences or third-party notices to make this check pass.
 
 **Common errors:**
 - `"License file LICENSE.rst is incorrect"`
@@ -205,7 +236,8 @@ in the style skill for title format, metadata and section order. Run an RST chec
 
 **Fix approach:**
 - Read the error message carefully
-- Edit README.rst to match the style skill's conventions and the checker's error
+- Fix structure/syntax within the project's adopted conventions; preserve legal and
+  vendor metadata unless explicit project instructions supply the required changes
 
 ---
 
@@ -227,7 +259,8 @@ the repository's existing structure; do not invent Cognidox part numbers.
 **Fix approach:**
 - Read the full `settings.yml` file
 - Compare against the schema requirements in the error message
-- Add missing fields or fix invalid values
+- Add missing non-legal fields or fix invalid values within confirmed project requirements
+- A missing or invalid `license` or vendor field requires the section 3 gate, not a default
 
 ---
 
@@ -261,7 +294,7 @@ the repository's existing structure; do not invent Cognidox part numbers.
 
 **Metadata format:**
 ```rst
-:vendor: XMOS
+:vendor: <project-supplied vendor value, if required>
 :version: 1.0.0
 :scope: General Use
 :description: Software PLL library
@@ -282,6 +315,9 @@ the repository's existing structure; do not invent Cognidox part numbers.
 - Locate the metadata block in README.rst (typically after the title)
 - Fix syntax or field values based on error message
 - Ensure proper RST field list format (`:field: value`)
+- Preserve existing vendor metadata; use only a project-supplied value for a new field.
+  If a required value is missing or conflicts with the checker, report it and ask about
+  that edit rather than inferring a vendor; vendor is not the copyright holder
 
 ---
 
@@ -378,7 +414,8 @@ pytest <infr_apps>/lib/python/test_repo_checks.py::test_check_<name> --tb=short 
 # Example: pytest <infr_apps>/lib/python/test_repo_checks.py::test_check_source --tb=short --dir=<repo_root>
 ```
 
-If the check still fails, analyze the new error message and iterate.
+If the check still fails, analyze the new error message within the confirmed scope.
+Do not broaden legal-metadata edits to obtain a passing check; report blocked mismatches.
 
 ### 6. FINAL VERIFICATION
 
@@ -421,7 +458,7 @@ Some checks are skipped based on repository type (from settings.yml):
 
 1. **DO NOT commit changes** - Leave all modifications uncommitted for user review
 2. **Iterative fixes** - Some checks (especially versions) may require multiple passes
-3. **License verification** - Always verify `xmos_public_v1` is appropriate when that license is used
+3. **Legal-metadata gate** - Checker failures never authorise ownership or licensing changes
 4. **Ignore files** - Source check respects `.xmos_ignore_source_check` patterns
 5. **Virtual environment** - Always use `.venv_<repo_name>` convention for consistency
 

@@ -32,6 +32,21 @@ Do not assume that internal XMOS repositories, tools or documentation are
 accessible. Report material access limitations rather than presenting unverified
 assumptions as established facts.
 
+## Ownership and licensing
+
+Do not determine legal ownership. Preserve existing copyright, attribution and licence
+notices, including third-party notices; do not judge their legitimacy. Do not infer
+ownership from repository naming, target hardware, organisation membership, the user's
+employer, commit history or licence choice.
+
+Apply new or changed notices only under explicit project instructions supplying the
+notice text or template and the files it applies to. The same rule applies to licence
+and vendor metadata; do not select these yourself. Without such instructions, add no
+new attribution and leave existing legal metadata unchanged. Continue ordinary coding
+without investigating ownership or asking ownership questions. Ask only when the
+requested task requires a legal-metadata edit and the necessary instructions are missing
+or conflicting. Existing project instructions need no separate ownership verification.
+
 ## Core principles
 
 1. **C over XC.** Write new code in C using `lib_xcore`, not the XC language,
@@ -157,8 +172,8 @@ version is unavailable.
 | [`xmos-numeric-programming`](./skills/xmos-numeric-programming/SKILL.md) | Writing or optimising numerical/DSP code: fixed-point vs floating point, `double` and 64-bit division in real-time loops, selecting `lib_xcore_math` operations. |
 | [`xmos-testing`](./skills/xmos-testing/SKILL.md) | Writing or reviewing tests: `lib_unity` C unit tests, `test_support`/Pyxsim simulator testbenches, choosing host/simulator/hardware, pass/fail criteria. |
 | [`xmos-project-structure`](./skills/xmos-project-structure/SKILL.md) | Setting up or navigating an XMOS sandbox/repo layout; setting up a Python venv for tooling. |
-| [`xmos-library-repo-style`](./skills/xmos-library-repo-style/SKILL.md) | Creating/editing files in an XMOS library-style repo (`lib_*`): copyright headers, LICENSE, `settings.yml`, README.rst structure/metadata, CHANGELOG.rst format, version consistency, `doc/rst/` structure, dependency version pinning. |
-| [`xmos-internal-repo-checks`](./skills/xmos-internal-repo-checks/SKILL.md) | Diagnosing and fixing `test_repo_checks` failures using XMOS internal `infr_apps` scripts; requires access to that repository and its Python tooling. |
+| [`xmos-library-repo-style`](./skills/xmos-library-repo-style/SKILL.md) | Maintaining adopted library conventions (`lib_*`): source notices, LICENSE, metadata, changelog, versions, docs and dependencies, without assuming ownership, licence or vendor. |
+| [`xmos-internal-repo-checks`](./skills/xmos-internal-repo-checks/SKILL.md) | Diagnosing and fixing applicable `test_repo_checks` failures using internal `infr_apps` scripts; requires access and explicit project authorisation for legal-metadata updates. |
 | [`xmos-skill-authoring`](./skills/xmos-skill-authoring/SKILL.md) | Adding a new skill or instruction to this repository, e.g. after learning something new from XMOS docs. |
 
 ## Repository layout

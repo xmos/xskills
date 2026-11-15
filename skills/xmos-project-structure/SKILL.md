@@ -56,6 +56,11 @@ applications to share dependency checkouts. Existing layouts and configured depe
 location overrides may differ; preserve a working arrangement rather than reorganising
 it merely to match this example.
 
+Prefixes describe roles, not ownership. Creating a `lib_*` or `sw_*` project does not
+authorise XMOS copyright, vendor metadata or an XMOS licence. Do not determine legal
+ownership. Preserve existing notices; use only project-supplied notice instructions.
+Without them, add no new attribution and continue ordinary coding without ownership questions.
+
 ## Finding repository and central agent guidance
 
 Read the application or library repository's `AGENTS.md` and other applicable project
