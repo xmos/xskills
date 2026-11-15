@@ -33,6 +33,7 @@ Skills
 * `xmos-library-repo-style <skills/xmos-library-repo-style/SKILL.md>`_: Follow XMOS library repository conventions.
 * `xmos-multi-tile-architecture <skills/xmos-multi-tile-architecture/SKILL.md>`_: Structure applications across multiple tiles.
 * `xmos-numeric-programming <skills/xmos-numeric-programming/SKILL.md>`_: Choose numeric representations and math libraries for DSP code.
+* `xmos-pin-mapping <skills/xmos-pin-mapping/SKILL.md>`_: How to select I/O pins and an appropriate XCORE package.
 * `xmos-printing-logging <skills/xmos-printing-logging/SKILL.md>`_: Choose printing/logging APIs, configure per-unit diagnostics and xSCOPE text I/O, and handle buffering.
 * `xmos-project-structure <skills/xmos-project-structure/SKILL.md>`_: Organize XMOS projects, sandboxes, and tooling.
 * `xmos-run-and-simulate <skills/xmos-run-and-simulate/SKILL.md>`_: Run applications using ``xrun`` or ``xsim``.
