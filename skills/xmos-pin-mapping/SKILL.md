@@ -14,13 +14,13 @@ aspects that are outside the scope of this skill.
 
 ## Pins, ports, the Portman and the XN file
 
-There are three documents to refer to: 
+There are three documents to refer to:
 
 - *AN02039: Pins, Ports, and the XN file* (XM-015276-AN), published as browsable HTML at
   <https://www.xmos.com/documentation/XM-015276-AN/html/doc/rst/an02039.html>.
   This contains an extended description of this skill.
 
-- *xcore.ai Package port map* (XM-014394-PC), published as an excel spreadsheet on 
+- *xcore.ai Package port map* (XM-014394-PC), published as an excel spreadsheet on
   <https://www.xmos.com/download/xcore_ai-Package-port-map.xls?version=latest>. This is
   called the port-map, and shows which packages bring out which ports on
   which pins.
@@ -28,7 +28,7 @@ There are three documents to refer to:
 - *xcore.ai datasheet* (XM-015129-PC), published as browsable HTML at
   <https://www.xmos.com/documentation/XM-015129-PC/html/rst/XU316-1024.html>.
   Sections of particular importance are:
-  
+
   - **Pin Configuration** that contains contains graphical representations
     of the packages available;
 
@@ -72,13 +72,13 @@ each, it is better to use two four bit ports (wasting a few signals), or
 four 1-bit ports. If a port must be used in two threads, then it should be
 protected by some form of synchronisation between the threads (lock,
 channel, synchroniser); a port that is used within a few clock cycles in two
-different threads triggers an **ET_RESOURCE_DEPENDENCY** exception.
+different threads triggers an **ET_RESOURCE_DEP** exception.
 
 Ports can generally not be shared between interfaces. Sometimes one may
 share a port, for example a clock input may be shared between two
 interfaces that happen to use the same clock. This requires that clock to
 be always driven, and be set-up outside the software that implements the
-interface. 
+interface.
 
 ## Restrictions of packages
 
@@ -88,13 +88,13 @@ package, smaller packages are generally cheaper than bigger packages, and
 use less area on the PCB and are hence preferable. However, smaller
 packages may not have enough pins to satisfy the requirements. Always
 confirm the package choice because future extensions may be difficult when
-most GPIO of a package are used. 
+most GPIO of a package are used.
 
 Another difference between packages are IO voltages. Smaller packages may
 only support a single IO voltage, larger packages may be flexible with IO
 voltages. The datasheet specifies this, and if flexible there are pins to
 select the IO voltage for at most three of the banks. For example,
-**LVL_T_N** can be used to select the voltage on the top bank. The signal
+**LV_T_N** can be used to select the voltage on the top bank. The signal
 table in the
 datasheet specifies which GPIO are connected to each VDDIO bank. If IO
 voltages are not specified confirm with the user what IO voltages are
@@ -112,7 +112,7 @@ MHz package may be a solution.
 
 Be careful with multiple functions being mapped onto a single IO pins on
 the package, or with ports being used by other on-chip elements such as
-MIPI or USB. 
+MIPI or USB.
 
 * Ports used by USB or MIPI are colored in the portmap. When a tile needs
   one of the PHYs (for example for a USB project), none of those ports
