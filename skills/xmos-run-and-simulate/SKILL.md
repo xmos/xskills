@@ -25,25 +25,22 @@ xrun --list-devices          # or -l: list connected xtag adapters
 xrun --adapter-id <serial> a.xe   # select a specific adapter when more than one is connected
 ```
 
-### `--io` vs `--xscope` for host communication
+### Prefer `--xscope` for host output; `--io` is a fallback
 
-Select host I/O according to the program's build configuration and board wiring:
+Prefer `xrun --xscope a.xe` whenever the application and board can support it. Use
+`xrun --io a.xe` only when xSCOPE cannot be used. Select the command to match the build
+configuration and board wiring; see
+[`xmos-printing-logging`](../xmos-printing-logging/SKILL.md#prefer-xscope-for-host-text-output)
+for the transport tradeoffs and text-I/O setup.
 
-- **`--xscope`**: use with a program configured for xSCOPE I/O or probes and the required
-  xLINK wiring. The write path avoids JTAG's tile-wide debug halts, but instrumentation
-  has overhead and may drop packets or stall according to configuration. This does not
-  accelerate every host syscall or guarantee unchanged real-time behaviour.
-- **`--io`**: system calls delivered over JTAG. This is **slow** and **pauses every hardware thread on
-  the tile** for each transfer, which will likely break any real-time guarantees in the
-  application. Only use `--io` for quick throwaway examples, or on platforms where the xSCOPE xLINK
-  wiring isn't present.
+For structured xSCOPE probes, see
+[`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md#xscope-data-probes).
 
 ```sh
-xrun --xscope --xscope-file xscope.vcd a.xe
+xrun --xscope a.xe
 ```
 
-See [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md) for using xSCOPE for
-"printf-style" debugging and data probes.
+Add `--xscope-file xscope.vcd` when capturing probe data to a file.
 
 ### `--io`/`--xscope` block until the program exits — a problem for long-running device apps
 
@@ -124,40 +121,30 @@ Because a test suite that takes seconds on silicon can take tens of minutes in `
   simulated time runs to several GB; under WSL write it to the Linux filesystem, not a `/mnt/c`
   path, and search it from the end.
 
-Unlike `xrun`, plain `xsim a.xe` needs **no `--io`/`--xscope`-equivalent flag** to surface a
-program's `printf`/`debug_printf` output on stdout — it's shown by default (confirmed empirically:
-`lib_logging`'s `app_debug_printf` printed all its lines under plain `xsim`, no extra flag needed).
+### Output and buffering in simulator tests
 
-### Plain C `printf` output can be lost entirely on a `--max-cycles`-bounded run of an indefinite program
+Hardware host-I/O runs use `xrun --xscope a.xe` (preferred when configured) or
+`xrun --io a.xe` (fallback). For ordinary simulated standard I/O, use `xsim a.xe`
+without those hardware I/O flags. To exercise xSCOPE in simulation, use the simulator's
+own `--xscope` syntax, for example `xsim --xscope "-offline xscope.vcd" a.xe`. Consult the
+[XSIM tutorial](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tutorials/using-xsim.html)
+for simulated host I/O and xSCOPE options.
 
-Regular `<stdio.h>` `printf` output goes through a buffered stdio stream that is only flushed when
-the buffer fills or the program exits normally — `--max-cycles` reaching its bound **kills the
-simulation abruptly**, without giving the target a chance to flush. Confirmed empirically on
-`lib_spdif`'s `app_spdif_loopback`: an early, unconditional `printf("Generating S/PDIF samples...")`
-near the top of an indefinitely-running task produced **zero output** even at `--max-cycles
-30000000`, even though the statement is definitely reached almost immediately after startup — the
-output was simply never flushed before the simulator was killed. This differs from `debug_printf`
-(`lib_logging`), which is written unbuffered/immediately (see
-[`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md)) and always appears.
+For API selection and buffering, use
+[`xmos-printing-logging`](../xmos-printing-logging/SKILL.md), rather than selecting a printing
+API as a workaround for a simulator run limit.
 
-- Do **not** treat "no printed output" from a `--max-cycles`-bounded run as evidence a code path
-  wasn't reached, or as a functional failure — for an indefinitely-running program, a bounded
-  run reaching its limit does not prove progress or freedom from deadlock. Check a defined
-  observation within the simulated interval. For an output-based test, arrange for output
-  to be flushed and verify the expected text or state; normal termination is one way
-  to flush buffered stdio.
-- If you need to confirm output specifically, prefer `debug_printf` (unbuffered) over plain `printf`
-  when instrumenting code that will be smoke-tested with a bounded/indefinite `xsim` run.
+For an output-based test, define the expected text and arrange for it to be emitted within the
+simulated interval. Missing output alone does not establish that a code path was not reached;
+check logging enablement, buffering, the selected I/O path and whether the task made progress.
+Conversely, reaching a cycle limit does not prove progress or freedom from deadlock. No printing
+API guarantees that output will be delivered before an external stop.
 
-### Plain `xsim a.xe` never returns for an indefinitely-running program
+### Bound runs of indefinite applications
 
-Unlike `xrun` (where only `--io`/`--xscope` block forever), **`xsim` has no default cycle limit at
-all** — it just keeps simulating. Point it at an app designed to run forever (a loopback example, a
-USB audio device, anything with a top-level `while (1)`/`select` loop and no exit condition) and
-`xsim a.xe` will hang indefinitely with **no output and no error**, exactly like the `xrun`
-indefinite-program trap above, but with no `--io`/`--xscope` flag to blame — plain `xsim a.xe` is
-enough on its own. This is easy to hit when smoke-testing loopback/reference-design examples in a
-simulator because there's no hardware to unplug and no timeout to notice.
+`xsim` does not impose a default cycle limit. An application designed to run indefinitely
+needs an explicit stopping condition in an automated test; lack of termination alone does not
+distinguish a healthy service loop from a deadlock.
 
 - Before running an unfamiliar/indefinite example under `xsim`, always pass `--max-cycles <n>` (see
   below) to guarantee it returns.
@@ -167,12 +154,12 @@ simulator because there's no hardware to unplug and no timeout to notice.
 
 Useful options:
 
-- `--max-cycles <n>` — stop after `n` simulated cycles (useful to bound a run in CI, e.g. to smoke-test
-  an app that normally runs indefinitely). Reaching the bound prints `xsim: error: C51188: maximum
-  cycles reached (n)` and **exits with a nonzero code** — this is the expected/intentional way a
-  bounded run ends, not by itself a functional pass or failure. Distinguish it from an
-  exception, then evaluate the test's required observations. If completion was required
-  and did not occur, the run has not passed.
+- `--max-cycles <n>` — exit when `n` simulated system cycles is reached, as described in the
+  [XSIM manual](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/cmd-line-tools/xsim-manual/xsim-manual.html#cmdoption-xsim-max-cycles).
+  Treat reaching the bound as a run limit, not by itself a functional pass or failure.
+  Check the exit status and diagnostics, distinguish a limit from an exception, and evaluate
+  the test's required observations. If completion was required and did not occur, the run
+  has not passed.
 - `--trace` / `-t` — full instruction trace to stdout (or `--trace-to <file>` to write it to a file
   instead, recommended — the trace is large, e.g. tens of MB for well under a second of simulated
   time). Each line is annotated with the enclosing function name/offset (e.g.
@@ -189,25 +176,17 @@ Useful options:
   finally faulted — e.g. `grep "(some_func+ 4a)" trace.txt` to list every visit to one specific
   instruction/offset across the whole run.
 - `--vcd-tracing 'args'` — signal-level tracing to a VCD file, viewable in a waveform viewer such
-  as GTKWave. Verified syntax (`xsim --help`), arguments are one quoted string:
-  `[global options] -tile <name> <trace options...> [-tile <name> <trace options...>]...`
-  - Global: `-o <file>` (output path), `-start-disabled` (wait for a `_traceStart`/`_traceStop`
-    syscall instead of tracing from cycle 0), `-pads` (trace device pad state).
-  - `-tile <name>` — required for multi-tile programs, selects which tile the trace options that
-    follow apply to (repeat the whole `-tile ... <options>` group per tile to trace more than one).
-  - Per-tile trace options: `-ports`, `-ports-detailed`, `-cycles`, `-cores`, `-timers`,
-    `-clock-blocks`, `-instructions`, `-functions`, `-usb`.
+  as GTKWave. For global and per-tile options, consult the
+  [XSIM tracing reference](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/cmd-line-tools/xsim-manual/xsim-manual.html#cmdoption-xsim-vcd-tracing).
   - Example: `xsim --vcd-tracing "-o trace.vcd -tile tile[1] -ports -cycles" a.xe`.
-  - Confirmed empirically: `$timescale` is always `1 ps`; a `-cycles` signal (named `*_CYCLES` in
-    the VCD's `$comment`-embedded signal-hierarchy XML) increments by 1 every tick, and consecutive
-    ticks are spaced by the tile's actual clock period in ps (e.g. 1666ps apart for a 600MHz
-    `SystemFrequency` tile per the `.xn` file — see
-    [`xmos-clock-domains`](../xmos-clock-domains/SKILL.md)) — use this to convert VCD timestamps to
-    real time, or as a sanity check that the right clock rate is configured.
-  - Confirmed empirically: killing the run early with `--max-cycles` (a nonzero-exit, abrupt stop —
-    see above) still leaves a well-formed, loadable VCD file truncated at the last traced value
-    change — unlike plain buffered `printf` output (above), VCD data is written incrementally, not
-    lost. Safe to combine `--max-cycles` with `--vcd-tracing` to bound an otherwise-indefinite run.
+    Use the tile name from the selected XN file. Quote the tracing arguments as one string.
+  - Use `-start-disabled` with `_traceStart()` / `_traceStop()` to restrict tracing to the
+    interval of interest and reduce trace volume.
+  - Read the generated VCD's `$timescale` to interpret timestamps; do not hard-code a time
+    unit or confuse VCD timestamp units with tile cycles. For cycle-to-time conversion, use
+    the configured tile clock; see [`xmos-clock-domains`](../xmos-clock-domains/SKILL.md).
+  - A bounded or interrupted trace is partial evidence. Check that the file loads and covers
+    the required interval; do not assume every early stop leaves a complete, valid VCD file.
 - `--gprof` — enables function/statement/address-level profiling; see
   [`xmos-debugging-profiling`](../xmos-debugging-profiling/SKILL.md).
 - `--xscope "-offline <file>"` or `--xscope "-realtime <host:port>"` — exercise xSCOPE code paths in
