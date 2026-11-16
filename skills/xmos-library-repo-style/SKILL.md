@@ -1,16 +1,32 @@
 ---
 name: xmos-library-repo-style
-description: Use when creating or editing files in an XMOS library-style repository (lib_*, sc_*, fwk_*, sln_*, or similar) so that source headers, LICENSE, settings.yml, README.rst, CHANGELOG.rst and repository agent guidance follow XMOS conventions -- copyright headers, README metadata, changelog format, version consistency, doc/rst structure, dependency version pinning and preservation of legacy compatibility. Use alongside any repo-check/repo-linting tool that validates these conventions.
+description: Use when creating or editing library-style repositories for XMOS targets (lib_*, sc_*, fwk_*, sln_* or similar), maintaining source notices, LICENSE, settings.yml, README.rst, CHANGELOG.rst or agent guidance. Applies repository conventions without assuming copyright ownership, licence or vendor. Covers metadata, version consistency, doc/rst structure, dependency pinning and legacy compatibility; use alongside applicable repository checks.
 ---
 
 # XMOS library repository style
 
-XMOS library-style repositories (`lib_*`, and legacy `sc_*`/`fwk_*`/`sln_*`) follow a standard set
-of file conventions across source headers, packaging metadata, and documentation. Writing new files
-to match these conventions from the start avoids a separate clean-up pass later. Repository *type*
-(library vs. application-note vs. reference-design, etc.) is inferred from the repo's directory name
-prefix — this skill focuses on **library** repos; note the differences called out below for
-application-note (`an*`) repos where relevant.
+Repositories for XMOS targets may adopt common library conventions (`lib_*`, and legacy
+`sc_*`/`fwk_*`/`sln_*`) for packaging and documentation. Establish which conventions the
+project actually requires before applying them. Prefixes are clues to repository roles,
+not proof of ownership or a requirement to adopt internal XMOS infrastructure. This skill
+focuses on library repos; application-note (`an*`) differences apply only where relevant.
+
+## Ownership and licensing
+
+Do not determine legal ownership. Preserve existing copyright, attribution and licence
+notices, including third-party notices; do not judge their legitimacy. Do not infer
+ownership from a `lib_*` prefix, XMOS hardware, organisation membership, the user's
+employer, commit history or licence choice. An existing notice applies to its file,
+not automatically to every new file.
+
+Use only explicit project instructions supplying the notice text or template, licence
+or vendor value and the files it applies to. Without such instructions, add no new
+attribution and leave existing legal metadata unchanged. Continue ordinary coding
+without investigating ownership or asking ownership questions. Ask only when the
+requested task requires a legal-metadata edit and the necessary instructions are missing
+or conflicting. Do not insert XMOS attribution, relicense code or remove existing notices
+to satisfy formatting checks. Existing project instructions need no separate ownership
+verification.
 
 ## Repository agent guidance and legacy compatibility
 
@@ -33,37 +49,31 @@ that status, identify and link the successor in both repository-specific agent g
 and the README, distinguishing the recommendation for new development from instructions
 for maintaining the existing implementation.
 
-## Copyright headers on every source file
+## Source notices
 
-Every source file (`.c`, `.h`, `.cpp`, `.cxx`, `.hpp`, `.s`, `.xc`, `.java`, `.py`) starts with a
-copyright notice, using that language's comment syntax (`//` for C-like languages, `#` for Python),
-placed **after** a shebang line if one is present. The exact wording depends on the repo's declared
-license (see `settings.yml` below); the two most common are:
+This skill supplies no default header. Use the project's supplied notice text or template
+only when its instructions explicitly apply it to the file. Use the language's comment
+syntax and place it after any shebang. Do not fill a missing holder or licence by research,
+inference or copying an adjacent file. If no header policy is supplied, add no header.
 
-```c
-// Copyright 2021-2026 XMOS LIMITED.
-// This Software is subject to the terms of the XMOS Public Licence: Version 1.
-```
-
-```c
-// Copyright (c) 2018, XMOS Ltd, All rights reserved
-// This software is available under the terms provided in LICENSE.txt.
-```
-
-- The year is a single year, or a `start-end` range, reflecting **git history** for that specific
-  file (first commit year through most recent commit year) — not the repo's overall age, and not a
-  fixed/hardcoded value. When editing an existing file in the current year, extend the end year if
-  it doesn't already cover it.
-- Use the exact wording for the repo's license type; don't paraphrase it.
-- New files get the current year as a single year
-- If git history is shallow or unreliable, preserve the existing start year; only extend the end year.
-- Skip generated files, build output, and third-party/vendored directories.
+- Preserve existing holders and notices; do not copy ownership from an adjacent file.
+- Update year ranges only when the confirmed policy calls for it, using that file's
+  history. Commit author names and dates do not establish copyright assignment.
+- If history or the applicable policy is unclear, preserve the notice. Ask only if the
+  requested task requires changing it; otherwise continue without a legal-metadata edit.
+- Keep required licence/SPDX notices intact. Licence selection and copyright ownership
+  are separate decisions; one does not establish the other.
+- Do not bulk-update generated files, build output or third-party/vendored directories.
 
 ## LICENSE file
 
-Exactly one `LICENSE.<ext>` file at the repo root (e.g. `LICENSE.rst`), whose content matches the
-standard template for the license type verbatim. Don't leave stray extra `LICENSE.*` files around
-after changing license type. 
+Preserve the project's existing licence files and their scope. Do not add, replace,
+consolidate or delete them simply to match an XMOS template. Multiple licences may be
+intentional. A repository's approved checks may require one particular root licence
+file; only apply that requirement within the supplied project instructions.
+If a licence is missing, do not create one unless explicitly instructed. If the requested
+task requires a licence edit but the supplied terms are missing or conflicting, ask rather
+than selecting a default. Formatting or adopting xskills is not authorisation to change licensing.
 
 License files belonging to third-party code included in the repo are out of
 scope: never remove or modify them. If unsure whether a license file is
@@ -71,14 +81,19 @@ third-party, do not touch it and flag it instead.
 
 ## `settings.yml`
 
-- First line must be exactly:
+This section applies only to repositories that use the XMOS internal schema. Do not
+create this file, insert internal identifiers or change legal metadata solely because
+a project targets XMOS hardware. Follow the selected schema and confirmed project policy.
+
+- For that internal schema, the first line is:
   ```yaml
   # This file relates to internal XMOS infrastructure and should be ignored by external users
   ```
 - `version:` — a semver string (`X.Y.Z`, optionally with a pre-release suffix); this must match the
-  version used everywhere else (see "Version consistency" below). In practice, real repos do **not**
-  carry a separate `license:` field in `settings.yml` — the license type is determined by the
-  `LICENSE.*` file's actual content (see above), not by a `settings.yml` key.
+  version used everywhere else (see "Version consistency" below). A `license:` key is
+  not present in every repository. Inspect existing licence files and the selected
+  schema to understand the configuration; neither a key nor a licence file establishes
+  copyright ownership or authorises applying a new licence.
 - `documentation:` block:
   - `root_doc: doc/rst/<repo_name>.rst` — must point to a file that actually exists.
   - `cognidox_part_number` — ends `-UG` for a library's user guide (`-AN` for application notes).
@@ -97,7 +112,8 @@ elsewhere) rather than repeating the repo name/title string throughout the file.
 
 ## `README.rst`
 
-Structure, in order:
+For projects adopting this README convention, use the following structure while
+preserving the actual project identity and existing notices:
 
 1. `:orphan:` as the very first (non-blank) line.
 2. A title, over/underlined with `#` characters, of the exact form:
@@ -108,14 +124,18 @@ Structure, in order:
    ```
 3. An RST field-list metadata block, e.g.:
    ```rst
-   :vendor: XMOS
+   :vendor: <project-supplied vendor value, if required>
    :version: 1.0.0
    :description: One-line description of what this library does
    :scope: General Use
    :category: Audio
    :keywords: I2S, audio, DSP
    ```
-   - Required: `:vendor:` (always `XMOS`), `:version:` (must match `settings.yml`), `:description:`.
+   - Where required by the project's schema: `:vendor:`, `:version:` (consistent with
+     its version metadata) and `:description:`. Preserve existing vendor metadata; use
+     only an explicitly supplied value for a new field. Otherwise omit it, asking only
+     if the requested task requires that field. Vendor and copyright holder are not
+     interchangeable. Report a checker-policy mismatch instead of inventing metadata.
    - Optional fields (`:scope:`, `:category:`, `:keywords:`, `:devices:`, `:hardware:`, etc.) are
      checked against a controlled vocabulary — stick to plain, descriptive, conventional values
      (e.g. scope values like `General Use`/`Demo`/`Tutorial`/`Example`; category values like

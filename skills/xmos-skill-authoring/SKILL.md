@@ -49,6 +49,12 @@ relevant. Core instructions may be loaded for every task in their scope, so keep
    relatively. Links to other skills and repository-root files may be missing when a skill is
    installed on its own; the README explains how to resolve them from an installed copy or the
    same release. Write each skill so it remains usable if a related skill is not installed.
+9. Do not give agents an ownership-determination task. Preserve existing notices and use
+   only project-supplied notice text or templates and explicitly stated scope; provide
+   no default header, holder or licence. Without instructions, add no new attribution
+   and continue ordinary coding without ownership questions. Ask only when a requested
+   legal-metadata edit lacks necessary instructions. This applies to scripted updates
+   and vendor metadata too, regardless of repository name, hardware, employer or licence.
 
 ## Updating an existing skill
 
