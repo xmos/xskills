@@ -1,10 +1,14 @@
 // This file relates to internal XMOS infrastructure and should be ignored by external users
 
-@Library('xmos_jenkins_shared_library@v0.56.0') _
+@Library('xmos_jenkins_shared_library@fix/software-only-release') _
 
 getApproval()
 pipeline {
     agent none
+
+    environment {
+        INFR_APPS_VERSION = 'fix/software-only-release'
+    }
 
     options {
         skipDefaultCheckout()
@@ -39,6 +43,12 @@ pipeline {
                                 runPytest('-n=1')
                             }
                         }
+                    }
+                }
+
+                stage('Package') {
+                    steps {
+                        archiveSandbox(REPO_NAME)
                     }
                 }
 
