@@ -12,7 +12,7 @@ verify the correct use GPIO that has been specified. When designing GPIO
 use, always verify that the GPIO is fit for purpose, there may be physical
 aspects that are outside the scope of this skill.
 
-## Pins, ports, the Portman and the XN file
+## Pins, ports, the Portmap, and the XN file
 
 There are three documents to refer to:
 
@@ -57,6 +57,31 @@ package. This goes through three indirections:
   and mm is a value between 0 and 63), and a pin-number which is either a
   serial counter clockwise number 1, 2, 3, ... or a grid value A1, A2, A3,
   ..., B1, B2, etc
+
+## Process for designing a port-map
+
+1. Identify the interfaces that are required
+
+2. Check with the libraries implementing these interfaces what options are
+   available for ports. Sometimes there is a trade-off between mulitple
+   narrow ports or fewer wider ports.
+
+3. Check which packages are plausible based on the number of GPIO required.
+   Pick one package where it fits for sure, and one package where it may
+   just fit. Discard packages where it cannot fit.
+
+4. Work out which interfaces should be on the same tile based on a
+   plausible software architecture
+
+5. Assign interfaces to ports, keeping in mind the port multiplexing, the
+   presence of any USB/MIPI/boot flash interfaces, XSCOPE links, and
+   port sharing. You may need to iterate this and the previous step
+
+6. If there is freedom to shuffle ports around (because ports are
+   interchangeable) then move them to a good phsyical location based on the
+   physical pin locations.
+
+7. Create the outputs
 
 ## Restrictions on multi-bit ports and port-sharing
 
@@ -186,7 +211,7 @@ Hence, you must consider three items simultaneously:
 
 You may have to run a few experiments. Also confirm with the user for future extensibility.
 
-## Showing the end-result
+## Creating the outputs: a portmap, XN file, and table
 
 You can show the end-result by using the graphical representation from the
 datasheet, and annotating the pins with the signal names for each of the
@@ -197,7 +222,8 @@ highlight rows that are unavailable due to the use of, for example, USB or
 MIPI PHYs.
 
 You must make a table showing the XnDmm name, the pin number, and the port
-name/bit number for each element of the interface. One line per pin.
+name/bit number for each element of the interface. One line per pin. The
+table must list pins that are not connected.
 
 You must make an XN file where in the appropriate `<Tile>` section
 (there is one for each tile) you label each port that has been used with
