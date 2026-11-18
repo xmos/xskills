@@ -49,8 +49,9 @@ or conflicting. Existing project instructions need no separate ownership verific
 
 ## Core principles
 
-1. **C over XC.** Write new code in C using `lib_xcore`, not the XC language,
-   unless the task requires an XC-only feature. See
+1. **C or XC.** Choose C, XC, or a combination according to the problem and
+   project requirements; neither language is preferred by default. For C using
+   `lib_xcore`, see
    [`xmos-c-programming`](./skills/xmos-c-programming/SKILL.md).
 2. **No dynamic memory.** Do not use `malloc`/`free`/`new` in embedded application
    code. Use static or stack allocation with tool-calculated stack sizes. See

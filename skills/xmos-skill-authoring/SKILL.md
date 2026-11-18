@@ -12,7 +12,7 @@ Meta-skill for maintaining `xskills` itself.
 | Situation | Put it in |
 |---|---|
 | Deep guidance needed only for specific tasks (e.g. "how do I profile with xgprof") | A skill (`skills/<name>/SKILL.md`) |
-| A principle that must be applied in every coding task in this repository (e.g. target XS3, use C) — if in doubt, prefer a skill instead | [`AGENTS.md`](../../AGENTS.md) core principles (keep this list short) |
+| A principle that must be applied in every coding task in this repository (e.g. target XS3) — if in doubt, prefer a skill instead | [`AGENTS.md`](../../AGENTS.md) core principles (keep this list short) |
 
 Prefer a skill over expanding `AGENTS.md` whenever the content is long or only occasionally
 relevant. Core instructions may be loaded for every task in their scope, so keep them concise.
