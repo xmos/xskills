@@ -62,7 +62,7 @@ package. This goes through three indirections:
 1. Identify the interfaces that are required
 
 2. Check with the libraries implementing these interfaces what options are
-   available for ports. Sometimes there is a trade-off between mulitple
+   available for ports. Sometimes there is a trade-off between multiple
    narrow ports or fewer wider ports.
 
 3. Check which packages are plausible based on the number of GPIO required.
@@ -73,11 +73,11 @@ package. This goes through three indirections:
    plausible software architecture
 
 5. Assign interfaces to ports, keeping in mind the port multiplexing, the
-   presence of any USB/MIPI/boot flash interfaces, XSCOPE links, and
+   presence of any USB/MIPI/boot flash interfaces, xSCOPE links, and
    port sharing. You may need to iterate this and the previous step
 
 6. If there is freedom to shuffle ports around (because ports are
-   interchangeable) then move them to a good phsyical location based on the
+   interchangeable) then move them to a good physical location based on the
    physical pin locations.
 
 7. Create the outputs
@@ -139,12 +139,20 @@ Be careful with multiple functions being mapped onto a single IO pins on
 the package, or with ports being used by other on-chip elements such as
 MIPI or USB.
 
-* Ports are muxed, and narrow ports always have precendence over wider
-  ports.
+* When enabled ports overlap, the narrower port takes precedence for output
+  on the shared pins. The wider port's non-overlapping pins remain usable.
+  Check the device's mux diagram for input routing and PHY/link overrides;
+  do not infer input routing from the output-priority rule. See *AN02039*
+  above and the XTC Tools
+  [port-to-pin mapping reference](https://www.xmos.com/documentation/XM-014363-PC/html/prog-guide/prog-ref/xs1-port-to-pin-map/portmap.html).
 
-* Ports used by USB or MIPI are colored in the portmap. When a tile needs
-  one of the PHYs (for example for a USB project), none of those ports
-  should be used by anything else. Note that where 8-bit ports are being
+* USB and MIPI PHYs use fixed, device-defined port resources, coloured in
+  the portmap. These mappings cannot be changed by relabelling ports in the
+  XN file. Check the selected device's datasheet and interface library, and
+  reserve the required ports on a supported tile before assigning other
+  interfaces. While the PHY is in use, none of those port resources should
+  be used by anything else. This does not necessarily reserve every
+  overlapping physical GPIO pin. Note that where 8-bit ports are being
   used by the USB PHY, the underlying pins can still be used by 4-bit
   ports because the mux prioritises narrow ports over wide ports. Note that
   on some packages 1-bit ports on a tile may not have been brought out on
@@ -152,7 +160,7 @@ MIPI or USB.
   it may be best on the tile that brings fewest of the conflicted 1-bit
   ports out.
 
-* XLINKs also come out on GPIO. When an XLINK is used (for xscope or for
+* XLINKs also come out on GPIO. When an XLINK is used (for xSCOPE or for
   connecting two die), they take priority over the ports. This mux is shown
   in the portmap
 
@@ -185,12 +193,22 @@ ise also be near pin 1. On a BGA package that uses a pin GRID pins are
 two-dimensional, so they must be close in both dimensions. Also note that
 some letters (I, O, S) are not used for row names.
 
-## XSCOPE Usage
+## xSCOPE usage
 
-If unspecified, you must check whether XSCOPE (for fast debugging) is
-required or not. If XSCOPE Is required you must reserve a 2-wire link (4
-pins) for XSCOPE. If it is not required, check that the user understands
-that they will debug over JTAG only.
+If the requirements and existing board design do not specify whether xSCOPE
+tracing or fast host output is needed, confirm this with the user. If needed,
+reserve a suitable 2-wire xLINK (two signal pins in each direction, four in
+total), route it to the XTAG debug connector, and describe the actual connection
+in the XN file. Reserving pins or adding an XN entry alone does not establish
+the physical connection; check the board schematic, connector and cabling.
+
+xSCOPE supplements JTAG rather than replacing the JTAG debug connection. If
+xSCOPE is omitted, confirm that the user accepts losing xSCOPE tracing and fast
+host output; JTAG programming and debugging remain available. See the
+[`xmos-printing-logging` guidance](../xmos-printing-logging/SKILL.md#prefer-xscope-for-host-text-output)
+and the
+[XTC xSCOPE reference](https://www.xmos.com/documentation/XM-014363-PC/html/tools-guide/tools-ref/xscope/index.html)
+for transport requirements and limitations.
 
 ## Multiple tiles
 
@@ -220,9 +238,13 @@ the pin. You can hide rows that are not relevant to the chosen package, and
 highlight rows that are unavailable due to the use of, for example, USB or
 MIPI PHYs.
 
-You must make a table showing the XnDmm name, the pin number, and the port
-name/bit number for each element of the interface. One line per pin. The
-table must list pins that are not connected.
+You must make a table showing the signal name, XnDmm name, package pin/ball
+number, and port name/bit number for each element of the interface. Use one
+row per physical pin and include unused bonded-out GPIO, including unused
+pins of assigned ports, labelled as unused. Distinguish these from package
+pins designated NC or reserved in the datasheet, and record the required
+treatment of those pins rather than treating them as spare GPIO. Record
+unbonded port bits separately as "not bonded out", with no package pin number.
 
 You must make an XN file where in the appropriate `<Tile>` section
 (there is one for each tile) you label each port that has been used with

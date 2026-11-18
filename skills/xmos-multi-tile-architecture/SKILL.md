@@ -7,13 +7,13 @@ description: Use when structuring a multi-tile XMOS application -- placing task 
 
 An XS3 device with more than one tile (e.g. XCORE.AI, XK-EVK-XU316) requires a **top-level,
 multi-tile XC file** to specify which entry-point function runs on which tile, and to declare any
-channels connecting them. **This is the one place XC remains required** even though C is otherwise
-preferred (see [`xmos-c-programming`](../xmos-c-programming/SKILL.md)): tiles are independent
+channels connecting them. **XC is required for tile placement**
+(see [`xmos-c-programming`](../xmos-c-programming/SKILL.md)): tiles are independent
 processors, and **it is not possible to express tile placement in the C language** — only XC's
 declarative `on tile[N]:`/`par` syntax can do it. Keep this file minimal (placement + channel
-declarations only) and put all real logic in plain C functions it calls into.
+declarations only) and put application logic in C or XC functions it calls into.
 
-## Minimal multi-tile file
+## Mixed C/XC example
 
 ```c
 // multitile.xc

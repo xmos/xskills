@@ -10,9 +10,7 @@ generally uses "thread" for that hardware execution context. A task or job is so
 that executes on a thread, not the hardware resource itself; other execution models
 may schedule multiple software tasks on a thread.
 
-XMOS is moving away from the XC language. **Write new code in C using `lib_xcore`**, not XC, unless
-a task specifically requires an XC-only language feature (e.g. certain legacy interfaces). If XC is
-required, keep it isolated and prefer C for everything else.
+**xcore can be programmed in C or XC.** This skill covers C using `lib_xcore`.
 
 All of the APIs below are declared in headers under `xcore/` (installed at
 `<XMOS_TOOL_PATH>/target/include/xcore/` — see
