@@ -5,6 +5,8 @@ UNRELEASED
 ----------
 
   * CHANGED:   Language guidance made neutral between C and XC.
+  * FIXED:     Clarified fixed USB/MIPI port mappings, port precedence, xSCOPE
+    connectivity and unused-pin reporting in the pin-mapping guidance.
 
 1.0.1
 -----
