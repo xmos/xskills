@@ -44,6 +44,7 @@ Skills
 * `xmos-project-structure <skills/xmos-project-structure/SKILL.md>`_: Organize XMOS projects, sandboxes, and tooling.
 * `xmos-run-and-simulate <skills/xmos-run-and-simulate/SKILL.md>`_: Run applications using ``xrun`` or ``xsim``.
 * `xmos-skill-authoring <skills/xmos-skill-authoring/SKILL.md>`_: Create and maintain skills in this repository.
+* `xmos-system-architecture <skills/xmos-system-architecture/SKILL.md>`_: Map a design onto XCORE threads, tiles, ports and inter-task communication.
 * `xmos-testing <skills/xmos-testing/SKILL.md>`_: Write tests with lib_unity and test_support.
 * `xmos-toolchain-paths <skills/xmos-toolchain-paths/SKILL.md>`_: Locate toolchain headers, libraries, and targets.
 * `xmos-vscode-extension <skills/xmos-vscode-extension/SKILL.md>`_: Configure XMOS development in VS Code.

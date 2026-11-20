@@ -170,6 +170,7 @@ version is unavailable.
 | [`xmos-real-time-programming`](./skills/xmos-real-time-programming/SKILL.md) | Understanding timers, port-clocks, real-time concurrency, and combining multiple real-time tasks. |
 | [`xmos-embedded-c-practices`](./skills/xmos-embedded-c-practices/SKILL.md) | Writing or reviewing embedded C for correctness/safety: no malloc, stack sizing, no unbounded recursion, VPU copies/fills. |
 | [`xmos-numeric-programming`](./skills/xmos-numeric-programming/SKILL.md) | Writing or optimising numerical/DSP code: fixed-point vs floating point, `double` and 64-bit division in real-time loops, selecting `lib_xcore_math` operations. |
+| [`xmos-system-architecture`](./skills/xmos-system-architecture/SKILL.md) | Designing how an application maps onto XCORE: splitting compute/IO/control tasks across hardware threads and tiles, port-to-tile planning, choosing channels vs shared memory, bare metal vs RTOS. |
 | [`xmos-testing`](./skills/xmos-testing/SKILL.md) | Writing or reviewing tests: `lib_unity` C unit tests, `test_support`/Pyxsim simulator testbenches, choosing host/simulator/hardware, pass/fail criteria. |
 | [`xmos-project-structure`](./skills/xmos-project-structure/SKILL.md) | Setting up or navigating an XMOS sandbox/repo layout; setting up a Python venv for tooling. |
 | [`xmos-library-repo-style`](./skills/xmos-library-repo-style/SKILL.md) | Maintaining adopted library conventions (`lib_*`): source notices, LICENSE, metadata, changelog, versions, docs and dependencies, without assuming ownership, licence or vendor. |
