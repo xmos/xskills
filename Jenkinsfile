@@ -51,21 +51,20 @@ pipeline {
                         archiveSandbox(REPO_NAME)
                     }
                 }
-
-                stage('🚀 Release') {
-                    when {
-                         expression { triggerRelease.isReleasable() }
-                    }
-                    steps {
-                        triggerRelease()
-                    }
-                }
             }
 
             post {
                 cleanup {
                     deleteDir()
                 }
+            }
+        }
+        stage('🚀 Release') {
+            when {
+                 expression { triggerRelease.isReleasable() }
+            }
+            steps {
+                triggerRelease()
             }
         }
     }
