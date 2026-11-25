@@ -136,6 +136,81 @@ Customer-facing links to `main` require approved guidance to be available there.
 Do not silently substitute an unapproved development branch when a referenced
 version is unavailable.
 
+## Running verifiers
+
+Verifiers are boolean claims about the code that must stay true. Each is a
+`.md` file with an `id`, a `scope` (file globs, relative to the root of the
+repository being changed), a `severity` (`error`, `warn` or `off`) and a claim
+with pass/fail conditions. Verifiers cover rules that need judgement; rules a
+script can check belong in the repository's tests.
+
+The verifiers that apply to a repository are the generic ones in this
+repository's [`verifiers/`](./verifiers/) plus those in the repository's own
+`verifiers/` directory, if it has one. A repository with no `verifiers/`
+directory still runs the generic ones. A local verifier with the same `id` as a
+generic one replaces it; `severity: off` disables it.
+
+Run them before finishing a change you made, and when reviewing a change
+someone else made:
+
+1. List the files in the change.
+2. Find every applicable verifier whose `scope` matches any of them. Skip
+   verifiers with `severity: off`.
+3. For each, judge the change against the claim: the lines added or modified,
+   read in the context of their files. Do not fail a verifier for existing
+   code the change did not touch; mention it as a note instead. Ignore
+   anything the verifier lists as an exception.
+4. Give evidence for every result, with `file:line` references. On PASS, name
+   what you checked (for example the new define and where it is guarded). On
+   FAIL, quote the offending lines and say which condition they break.
+
+What happens next depends on whether the change is yours.
+
+**If you made the change:** fix every `error` failure and judge it again.
+Leave `warn` failures unless asked. Report each verifier id as PASS, FIXED
+(it failed and you fixed it: say what you changed) or FAIL (say why it
+remains). If a verifier seems wrong, say so; don't edit or delete it, or
+change correct code, to make it pass.
+
+**If you are reviewing a change you did not make:** do not modify anything.
+Report each verifier id as PASS or FAIL.
+
+Give a verifier's severity only when it fails, as `FAIL (error)` or
+`FAIL (warn)`. Do not show severity on a PASS or FIXED result.
+
+In both cases, say so if no verifier matched, and report it as a verification
+gap if the generic verifiers could not be read.
+
+To audit a whole repository against a verifier, for example after adding or
+tightening one, judge every file in its `scope` instead of only the change.
+Do this only when asked, and report without fixing.
+
+## Generic verifiers
+
+`verifiers/` holds verifiers that apply to every XMOS repo whose AGENTS.md
+points here. Changes to them affect all those repos, so:
+
+- Only add a verifier here if it holds for XMOS repos generally. Anything
+  specific to one repo belongs in that repo's own `verifiers/`.
+- Write a verifier only for a rule a compiler warning, linter or test cannot
+  check. If one can, add that check to the repository's tests instead. If a
+  verifier's rule later becomes checkable by a test, add the test and delete
+  the verifier.
+- Each verifier is one `.md` file with frontmatter: `id` (prefixed `xmos-`,
+  unique), `scope` (file globs), `severity` (`error`, `warn` or `off`). The
+  body has a **Claim**,
+  **Pass if**, **Fail if**, **Exceptions** (legitimate cases that look like
+  violations, such as the words appearing in comments) and **Evidence** (what
+  to quote on failure).
+- One claim per verifier. If you need "and", split it.
+- Keep scopes narrow so verifiers only run on relevant files.
+- Before committing a verifier, try it on a change that should pass, one that
+  should fail, and one that hits an exception.
+- New verifiers start at `severity: warn`; raise to `error` only once they've
+  run cleanly on real changes.
+- Don't rename an `id`: repos override generic verifiers by id, and a rename
+  silently breaks their overrides.
+
 ## Maintaining xskills
 
 - Follow [`xmos-skill-authoring`](./skills/xmos-skill-authoring/SKILL.md) when
