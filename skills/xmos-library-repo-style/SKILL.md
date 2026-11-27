@@ -127,7 +127,7 @@ preserving the actual project identity and existing notices:
    :vendor: <project-supplied vendor value, if required>
    :version: 1.0.0
    :description: One-line description of what this library does
-   :scope: General Use
+   :scope: General use
    :category: Audio
    :keywords: I2S, audio, DSP
    ```
@@ -153,8 +153,7 @@ preserving the actual project identity and existing notices:
 4. The following sections, **in this exact order** (each its own properly over/underlined RST
    title): **Summary, Features, Known issues, Development repo, Required tools, Required libraries
    (dependencies), Related application notes, Support**. `Host system requirements` is an optional
-   section that may also appear. For an application-note repo, drop **Development repo** and
-   **Support**, and present the repo name in upper case throughout.
+   section that may also appear. For an application-note repo, present the repo name in upper case throughout.
 5. The whole file must be valid RST (no syntax errors — check with an RST linter before finishing).
 
 ## `CHANGELOG.rst`
